@@ -28,23 +28,24 @@
     const month = new Date().getMonth() + 1;
     let currentSeason = "";
     let seasonLabel = "";
+    let currentSeasonJp = ""; // 副菜の季節判定用
 
     if (month >= 3 && month <= 5) {
-        currentSeason = "spring"; seasonLabel = "🌸 春のメニュー";
+        currentSeason = "spring"; seasonLabel = "🌸 春のメニュー"; currentSeasonJp = "春";
     } else if (month >= 6 && month <= 8) {
-        currentSeason = "summer"; seasonLabel = "🌻 夏のメニュー";
+        currentSeason = "summer"; seasonLabel = "🌻 夏のメニュー"; currentSeasonJp = "夏";
     } else if (month >= 9 && month <= 11) {
-        currentSeason = "autumn"; seasonLabel = "🍁 秋のメニュー";
+        currentSeason = "autumn"; seasonLabel = "🍁 秋のメニュー"; currentSeasonJp = "秋";
     } else {
-        currentSeason = "winter"; seasonLabel = "⛄️ 冬のメニュー";
+        currentSeason = "winter"; seasonLabel = "⛄️ 冬のメニュー"; currentSeasonJp = "冬";
     }
     document.getElementById("seasonDisplay").textContent = seasonLabel;
 
-    // --- データを格納する変数 ---
+    // --- 主菜データを格納する変数 ---
     const seasonalMains = { spring: [], summer: [], autumn: [], winter: [] };
 
-    // --- 主菜1〜100のCSVデータ ---
-    const rawNewData = `
+    // --- 主菜1〜100のCSVデータ（前回維持） ---
+    const rawMainData = `
 1,牛丼,新玉ねぎと牛赤身,糸コン多め・おろしポン酢,しめじとエリンギ入り,長ねぎと春菊のすき焼き風
 2,親子丼,菜の花の親子丼,鶏ささみと大葉の親子丼,舞茸入り親子丼,鶏胸肉と白ねぎの親子丼
 3,とんかつ,豚ヒレのパン粉焼き,梅しそサンド焼き,揚げないきのこソースカツ,おろし雪見カツ
@@ -76,7 +77,7 @@
 29,漬け丼,真鯛の桜漬け丼,マグロと山芋の漬け,サーモンといくら丼,寒ブリの漬け丼
 30,海老料理,エビとアスパラの塩炒め,エビチリ（トマト入り）,エビとキノコのガーリック,エビの豆乳グラタン
 31,揚げ物風,桜エビのかき揚げ（ノンフライ）,アジフライ（オーブン焼き）,カキフライ（パン粉焼き）,タラの唐揚げ（みぞれあん）
-32,パスタ,菜の花とたらこ,鯖缶と大葉の冷製,鮭とキノコの豆乳パスタ,牡蠣とほう惹草の和風
+32,パスタ,菜の花とたらこ,鯖缶と大葉の冷製,鮭とキノコの豆乳パスタ,牡蠣とほうれん草の和風
 33,酒蒸し,あさりとわかめ,しじみのエスニック蒸し,鮭とキノコのホイル蒸し,鱈の白菜包み蒸し
 34,塩焼き,鯖の塩焼き（レモン）,鰯の塩焼き（梅肉）,さんまの塩焼き（すだち）,寒サバの塩焼き
 35,南蛮漬け,ワカサギの南蛮漬け,鯵と夏野菜の南蛮,秋鮭の南蛮漬け,ぶりの中華風南蛮
@@ -146,8 +147,8 @@
 99,おから,新玉ねぎ入りのしっとり,おからのサラダ風,蓮根入りおから,干し椎茸たっぷりおから
 100,揚げ出し茄子,茄子と新玉ねぎ,茄子とミョウガ,秋茄子とおろし,茄子と白菜の煮浸し`;
 
-    // データのパースと結合
-    rawNewData.trim().split('\n').forEach(line => {
+    // 主菜データのパース
+    rawMainData.trim().split('\n').forEach(line => {
         const parts = line.split(',');
         if(parts.length < 6 || isNaN(parseInt(parts[0]))) return;
         
@@ -176,27 +177,134 @@
         }
     });
 
-    const sideDishes = [
-        { name: "ほうれん草の胡麻和え", tags: ["veg", "refreshing"], ingredients: ["ほうれん草", "ごま"] },
-        { name: "ポテトサラダ", tags: ["carb", "heavy"], ingredients: ["じゃがいも", "マヨネーズ", "きゅうり"] },
-        { name: "冷奴", tags: ["protein", "refreshing", "low_cal"], ingredients: ["豆腐", "ねぎ", "生姜"] },
-        { name: "きんぴらごぼう", tags: ["veg", "fiber"], ingredients: ["ごぼう", "にんじん"] },
-        { name: "大根とワカメの味噌汁", tags: ["soup", "refreshing"], ingredients: ["大根", "ワカメ", "味噌"] },
-        { name: "ブロッコリーのマヨ和え", tags: ["veg", "fiber"], ingredients: ["ブロッコリー", "マヨネーズ"] },
-        { name: "ひじきの煮物", tags: ["veg", "fiber"], ingredients: ["ひじき", "にんじん", "油揚げ"] },
-        { name: "春雨サラダ", tags: ["refreshing"], ingredients: ["春雨", "きゅうり", "ハム"] },
-        { name: "たたききゅうり", tags: ["refreshing", "low_cal"], ingredients: ["きゅうり", "ごま油", "塩昆布"] },
-        { name: "カボチャの煮付け", tags: ["heavy", "veg"], ingredients: ["かぼちゃ"] },
-        { name: "もやしのナムル", tags: ["low_cal", "refreshing"], ingredients: ["もやし", "ごま油", "にんにく"] },
-        { name: "コンソメスープ", tags: ["soup"], ingredients: ["玉ねぎ", "コンソメ"] },
-        { name: "茶碗蒸し", tags: ["protein"], ingredients: ["卵", "かまぼこ", "しいたけ"] },
-        { name: "ちくわの磯辺揚げ", tags: ["heavy"], ingredients: ["ちくわ", "青のり", "小麦粉"] },
-        { name: "小松菜のお浸し", tags: ["veg", "low_cal"], ingredients: ["小松菜", "かつおぶし"] },
-        { name: "ポトフ風スープ", tags: ["soup", "veg"], ingredients: ["じゃがいも", "にんじん", "ウインナー"] },
-        { name: "無限ピーマン", tags: ["veg", "refreshing"], ingredients: ["ピーマン", "ツナ缶", "ごま油"] },
-        { name: "厚揚げ焼き", tags: ["protein", "heavy"], ingredients: ["厚揚げ", "しょうが", "醤油"] }
-    ];
+    // --- 副菜全110種のCSVデータ ---
+    const rawSideData = `通年,ポテトサラダ,["carb","heavy"],["じゃがいも","マヨネーズ","きゅうり"]
+通年,冷奴,["protein","refreshing","low_cal"],["豆腐","ねぎ","生姜"]
+通年,ひじきの煮物,["veg","fiber"],["ひじき","にんじん","油揚げ"]
+通年,春雨サラダ,["refreshing"],["春雨","きゅうり","ハム"]
+通年,たたききゅうり,["refreshing","low_cal"],["きゅうり","ごま油","塩昆布"]
+通年,もやしのナムル,["low_cal","refreshing"],["もやし","ごま油","にんにく"]
+通年,コンソメスープ,["soup"],["玉ねぎ","コンソメ"]
+通年,茶碗蒸し,["protein"],["卵","かまぼこ","しいたけ"]
+通年,ちくわの磯辺揚げ,["heavy"],["ちくわ","青のり","小麦粉"]
+通年,厚揚げ焼き,["protein","heavy"],["厚揚げ","しょうが","醤油"]
+通年,ブロッコリーのマヨ和え,["veg","fiber"],["ブロッコリー","マヨネーズ"]
+通年,切り干し大根の煮物,["veg","fiber"],["切り干し大根","にんじん","油揚げ"]
+通年,だし巻き卵,["protein"],["卵","だし汁"]
+通年,コールスロー,["veg","refreshing"],["キャベツ","コーン","マヨネーズ"]
+通年,きんぴらごぼう,["veg","fiber"],["ごぼう","にんじん"]
+通年,マカロニサラダ,["carb","heavy"],["マカロニ","きゅうり","ハム"]
+通年,トマトと玉ねぎのサラダ,["veg","refreshing"],["トマト","玉ねぎ","ドレッシング"]
+通年,コーンバター,["heavy"],["コーン缶","バター"]
+通年,豆腐ステーキ,["protein"],["豆腐","醤油","かつおぶし"]
+通年,トマトと卵の炒め物,["veg","protein"],["トマト","卵"]
+通年,がんもどきの煮物,["protein"],["がんもどき","だし汁"]
+通年,キャベツの塩昆布和え,["veg","low_cal"],["キャベツ","塩昆布","ごま油"]
+通年,レンコンのきんぴら,["veg","fiber"],["レンコン","唐辛子"]
+通年,ほうれん草とベーコンのソテー,["veg"],["ほうれん草","ベーコン"]
+通年,ツナコーンサラダ,["refreshing"],["レタス","ツナ","コーン"]
+通年,うずら卵の醤油漬け,["protein"],["うずら卵","醤油"]
+通年,枝豆,["protein","low_cal"],["枝豆","塩"]
+通年,キムチ和え豆腐,["protein","refreshing"],["豆腐","キムチ"]
+通年,ちくわの穴詰め,["protein"],["ちくわ","きゅうり","チーズ"]
+通年,大根とワカメの味噌汁,["soup","refreshing"],["大根","ワカメ","味噌"]
+春,菜の花の辛子和え,["veg","refreshing"],["菜の花","辛子"]
+春,たけのこの土佐煮,["veg","fiber"],["たけのこ","かつおぶし"]
+春,若竹煮,["veg","soup"],["たけのこ","わかめ"]
+春,春キャベツの浅漬け,["veg","low_cal"],["春キャベツ","塩"]
+春,新じゃがのバター醤油,["carb"],["新じゃがいも","バター","醤油"]
+春,そら豆の塩茹で,["veg","protein"],["そら豆","塩"]
+春,アスパラのごま和え,["veg"],["アスパラ","ごま"]
+春,新玉ねぎのスライスサラダ,["veg","refreshing"],["新玉ねぎ","かつおぶし"]
+春,ふきの煮物,["veg","fiber"],["ふき","だし汁"]
+春,菜の花とハムのサラダ,["veg"],["菜の花","ハム"]
+春,春キャベツとあさりの蒸し物,["protein","veg"],["春キャベツ","あさり"]
+春,スナップエンドウの温サラダ,["veg"],["スナップエンドウ","マヨネーズ"]
+春,ウドの酢味噌和え,["veg","refreshing"],["ウド","酢味噌"]
+春,新じゃがとベーコンのサラダ,["carb"],["新じゃがいも","ベーコン"]
+春,新玉ねぎのコンソメスープ,["soup"],["新玉ねぎ","ベーコン"]
+春,アシタバのお浸し,["veg"],["アシタバ","醤油"]
+春,パセリと卵の炒め物,["veg","protein"],["パセリ","卵"]
+春,サクラエビとキャベツの炒め物,["veg","protein"],["キャベツ","サクラエビ"]
+春,ふきのとうの天ぷら,["veg","heavy"],["ふきのとう","小麦粉"]
+春,小松菜のお浸し,["veg","low_cal"],["小松菜","かつおぶし"]
+夏,無限ピーマン,["veg","refreshing"],["ピーマン","ツナ缶","ごま油"]
+夏,ナスの揚げ浸し,["veg","heavy"],["ナス","だし汁"]
+夏,オクラのお浸し,["veg","low_cal"],["オクラ","かつおぶし"]
+夏,ゴーヤチャンプルー,["protein","veg"],["ゴーヤ","豆腐","卵"]
+夏,トマトとバジルのカプレーゼ,["refreshing"],["トマト","モッツァレラチーズ"]
+夏,ズッキーニのチーズ焼き,["veg"],["ズッキーニ","粉チーズ"]
+夏,夏野菜のラタトゥイユ,["veg"],["ナス","ズッキーニ","パプリカ"]
+夏,モロヘイヤのスープ,["soup","veg"],["モロヘイヤ","だし汁"]
+夏,焼きトウモロコシ,["carb"],["トウモロコシ","醤油"]
+夏,みょうがの甘酢漬け,["refreshing"],["みょうが","酢","砂糖"]
+夏,ししとうの雑魚炒め,["veg"],["ししとう","ちりめんじゃこ"]
+夏,冷製コーンスープ,["soup"],["コーン","牛乳"]
+夏,きゅうりとわかめの酢の物,["refreshing"],["きゅうり","わかめ","酢"]
+夏,ゴーヤのサラダ,["veg","refreshing"],["ゴーヤ","マヨネーズ","ツナ"]
+夏,トマトと豆腐のサラダ,["protein","refreshing"],["トマト","豆腐"]
+夏,スイカの皮の漬物,["veg","low_cal"],["スイカの皮","塩","ごま油"]
+夏,ナスの味噌炒め,["veg","heavy"],["ナス","味噌"]
+夏,冬瓜の煮物,["veg","low_cal"],["冬瓜","だし汁"]
+夏,焼きナス,["veg","refreshing"],["ナス","生姜"]
+夏,ピーマンの肉詰め,["protein","heavy"],["ピーマン","ひき肉"]
+秋,カボチャの煮付け,["heavy","veg"],["かぼちゃ"]
+秋,きのこのお浸し,["veg","fiber"],["しめじ","えのき","醤油"]
+秋,さつまいものレモン煮,["veg","carb"],["さつまいも","レモン","砂糖"]
+秋,レンコンチップス,["heavy"],["レンコン","塩"]
+秋,銀杏の素揚げ,["low_cal"],["銀杏","塩"]
+秋,焼きしいたけ,["veg"],["しいたけ","醤油"]
+秋,栗の甘露煮,["carb"],["栗","砂糖"]
+秋,きのこのホイル焼き,["veg","low_cal"],["エリンギ","舞茸","バター"]
+秋,柿の白和え,["veg","refreshing"],["柿","豆腐","ごま"]
+秋,ナスとしめじの味噌汁,["soup"],["ナス","しめじ","味噌"]
+秋,ごぼうスティック,["fiber","heavy"],["ごぼう","片栗粉"]
+秋,舞茸のソテー,["veg"],["舞茸","バター"]
+秋,さつまいもサラダ,["carb"],["さつまいも","マヨネーズ"]
+秋,里芋の煮っころがし,["veg","carb"],["里芋","醤油"]
+秋,くるみとほうれん草の和え物,["veg"],["ほうれん草","くるみ"]
+秋,かぼちゃとベーコンの炒め物,["veg"],["かぼちゃ","ベーコン"]
+秋,梨と生ハムのサラダ,["refreshing"],["梨","生ハム"]
+秋,レンコンの胡麻ドレサラダ,["fiber"],["レンコン","胡麻ドレッシング"]
+秋,えのきの唐揚げ,["heavy"],["えのき","片栗粉"]
+秋,きんぴらごぼう,["veg","fiber"],["ごぼう","にんじん"]
+冬,ほうれん草の胡麻和え,["veg","refreshing"],["ほうれん草","ごま"]
+冬,ポトフ風スープ,["soup","veg"],["じゃがいも","にんじん","ウインナー"]
+冬,ふろふき大根,["veg","low_cal"],["大根","味噌"]
+冬,白菜の浅漬け,["veg","refreshing"],["白菜","塩","昆布"]
+冬,白菜と油揚げの煮物,["veg"],["白菜","油揚げ"]
+冬,大根サラダ(梅ドレ),["veg","refreshing"],["大根","梅干し"]
+冬,春菊のお浸し,["veg"],["春菊","だし醤油"]
+冬,タラモサラダ,["carb"],["じゃがいも","明太子"]
+冬,ゆず大根,["veg","refreshing"],["大根","ゆず","酢"]
+冬,ひらたけのスープ,["soup"],["ひらたけ","コンソメ"]
+冬,白菜と豚肉の重ね蒸し,["protein","veg"],["白菜","豚バラ"]
+冬,ごぼうのサラダ,["fiber"],["ごぼう","マヨネーズ"]
+冬,かぶとハムのサラダ,["veg","refreshing"],["かぶ","ハム"]
+冬,カリフラワーのフリット,["heavy"],["カリフラワー","小麦粉"]
+冬,ほうれん草と卵のスープ,["soup"],["ほうれん草","卵"]
+冬,かぶの含め煮,["veg"],["かぶ","だし汁"]
+冬,水菜のサラダ,["veg","refreshing"],["水菜","大根"]
+冬,大根のそぼろあんかけ,["veg","protein"],["大根","ひき肉"]
+冬,ネギのグラタン風,["veg","heavy"],["ネギ","チーズ"]
+冬,里芋のポテトサラダ風,["carb"],["里芋","マヨネーズ"]`;
 
+    const allSideDishes = [];
+
+    // 副菜データのパース（正規表現でJSON配列部分を抽出）
+    rawSideData.trim().split('\n').forEach(line => {
+        const match = line.match(/^([^,]+),([^,]+),(\[.*?\]),(\[.*?\])$/);
+        if (match) {
+            allSideDishes.push({
+                category: match[1],
+                name: match[2],
+                tags: JSON.parse(match[3]),
+                ingredients: JSON.parse(match[4])
+            });
+        }
+    });
+
+    // --- ロジック ---
     function getRandomItem(array) {
         return array[Math.floor(Math.random() * array.length)];
     }
@@ -209,20 +317,26 @@
     let recentSideDishes = [];
 
     function getBalancedSideDish(mainDish) {
+        // 現在の季節に応じた副菜リスト（通年 ＋ 現在の季節）を作成（合計50種）
+        const availableSidesBySeason = allSideDishes.filter(side => side.category === "通年" || side.category === currentSeasonJp);
+
         let filteredSides = [];
         if (mainDish.category === "meat" || mainDish.nutrition === "high" || mainDish.category === "carb") {
-            filteredSides = sideDishes.filter(side => side.tags.includes("refreshing") || side.tags.includes("veg") || side.tags.includes("low_cal") || side.tags.includes("soup"));
+            filteredSides = availableSidesBySeason.filter(side => side.tags.includes("refreshing") || side.tags.includes("veg") || side.tags.includes("low_cal") || side.tags.includes("soup"));
         } else {
-            filteredSides = sideDishes.filter(side => !side.tags.includes("heavy"));
+            filteredSides = availableSidesBySeason.filter(side => !side.tags.includes("heavy"));
         }
-        if (filteredSides.length === 0) filteredSides = sideDishes;
+        if (filteredSides.length === 0) filteredSides = availableSidesBySeason;
 
+        // 履歴フィルターを適用
         let availableSides = filteredSides.filter(side => !recentSideDishes.includes(side.name));
         if (availableSides.length === 0) availableSides = filteredSides; 
 
         const selected = getRandomItem(availableSides);
         recentSideDishes.push(selected.name);
-        if (recentSideDishes.length > 5) recentSideDishes.shift(); 
+        
+        // 副菜の候補が大幅に増えたため、履歴記憶数を15回まで拡張
+        if (recentSideDishes.length > 15) recentSideDishes.shift(); 
 
         return selected;
     }
@@ -240,7 +354,6 @@
         const lastMainName = localStorage.getItem('lastDinnerMain');
         if (lastMainName) {
             const filteredByHistory = availableMains.filter(dish => dish.name !== lastMainName);
-            // 候補がゼロにならない場合のみ除外を適用
             if (filteredByHistory.length > 0) {
                 availableMains = filteredByHistory;
             }
@@ -278,6 +391,7 @@
             // 決定した主菜を「前回のメニュー」としてLocalStorageに保存
             localStorage.setItem('lastDinnerMain', selectedMain.name);
 
+            // 主菜に合わせた副菜を決定
             const selectedSide = getBalancedSideDish(selectedMain);
 
             const rawIngredients = [...selectedMain.ingredients, ...selectedSide.ingredients];
