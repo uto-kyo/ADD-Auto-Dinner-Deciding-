@@ -40,7 +40,8 @@
         box-shadow: 0 0 15px #0f0 inset, 0 0 15px #0f0;
         display: block;
         margin: 0 auto;
-        touch-action: none; /* スマホスクロール防止 */
+        touch-action: none; /* スマホスクロール・ズーム防止 */
+        cursor: crosshair; /* マウス操作を意識したカーソル */
     }
     .controls {
         display: flex;
@@ -117,7 +118,6 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    // UI Elements
     const setupUI = document.getElementById('setupUI');
     const gameUI = document.getElementById('gameUI');
     const playerScoreEl = document.getElementById('playerScore');
@@ -126,7 +126,6 @@
     let animationId;
     let isPlaying = false;
 
-    // ゲーム状態
     let state = {
         level: 1,
         aiMode: false,
@@ -136,24 +135,22 @@
         fieldAngle: 0,
         fieldAngularVelocity: 0,
         lastTime: 0,
-        fieldNextChange: 0
+        fieldNextChange: 0,
+        isServing: false, // サーブ待機状態のフラグ
+        isDragging: false // マウスドラッグ判定
     };
 
-    // オブジェクト
     const W = canvas.width;
     const H = canvas.height;
     
-    let ball = { x: 0, y: 0, vx: 0, vy: 0, spin: 0 }; // ワールド座標
-    let player = { x: 0, width: W/10, angle: 0, vx: 0 }; // ローカル座標
-    let npc = { x: 0, width: W/10, targetX: 0 }; // ローカル座標
+    let ball = { x: 0, y: 0, vx: 0, vy: 0, spin: 0 }; 
+    let player = { x: 0, width: W/10, angle: 0, vx: 0 }; 
+    let npc = { x: 0, width: W/10, targetX: 0 }; 
 
-    // コントロール状態
     const keys = { left: false, right: false };
-
-    // AI学習データ (ローカルストレージ)
     let aiData = JSON.parse(localStorage.getItem('cyberPongAIData')) || {};
 
-    // --- コントロールバインディング ---
+    // --- ボタン操作 ---
     const btnL = document.getElementById('btnLeft');
     const btnR = document.getElementById('btnRight');
     const btnRotL = document.getElementById('btnRotateL');
@@ -169,10 +166,9 @@
     btnR.addEventListener('mousedown', pressRight); btnR.addEventListener('touchstart', pressRight, {passive:true});
     btnR.addEventListener('mouseup', releaseRight); btnR.addEventListener('touchend', releaseRight);
     
-    // パドル角度操作
     const rotatePaddle = (dir) => {
         if (state.level >= 3) {
-            player.angle += dir * (Math.PI / 4); // 45度
+            player.angle += dir * (Math.PI / 4); 
             if (player.angle >= Math.PI) player.angle -= Math.PI;
             if (player.angle <= -Math.PI) player.angle += Math.PI;
         }
@@ -180,15 +176,49 @@
     btnRotL.addEventListener('mousedown', () => rotatePaddle(-1));
     btnRotR.addEventListener('mousedown', () => rotatePaddle(1));
 
-    // ドラッグ操作
-    canvas.addEventListener('touchmove', (e) => {
-        if(!isPlaying) return;
+    // --- サーブ処理 ---
+    function triggerServe() {
+        if (state.isServing) {
+            state.isServing = false;
+            const baseV = H / 1.0;
+            // ローカル上向き（-Y方向）に打ち出す
+            const lvx = (Math.random() - 0.5) * baseV * 0.5;
+            const lvy = -baseV;
+            // ワールド座標の速度に変換
+            const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
+            ball.vx = lvx * wCos - lvy * wSin;
+            ball.vy = lvx * wSin + lvy * wCos;
+        }
+    }
+
+    // --- マウス・タッチドラッグ操作 ---
+    function handleDrag(clientX) {
+        if (!isPlaying) return;
         const rect = canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        const rawX = touch.clientX - rect.left - W/2;
-        // 簡易的にワールドのXをローカルのXとして扱う（厳密な逆回転は省略し操作性優先）
+        // 画面のCSSサイズと実際のCanvas解像度の比率を計算（Y軸のズレも関係なくX軸のみ取得）
+        const scaleX = canvas.width / rect.width;
+        const rawX = (clientX - rect.left) * scaleX - W/2;
         player.x = Math.max(-W/2 + player.width/2, Math.min(W/2 - player.width/2, rawX));
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        state.isDragging = true;
+        triggerServe();
+        handleDrag(e.clientX);
+    });
+    window.addEventListener('mouseup', () => state.isDragging = false);
+    canvas.addEventListener('mousemove', (e) => {
+        if (state.isDragging) handleDrag(e.clientX);
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+        triggerServe();
+        handleDrag(e.touches[0].clientX);
     }, {passive:true});
+    canvas.addEventListener('touchmove', (e) => {
+        handleDrag(e.touches[0].clientX);
+    }, {passive:true});
+
 
     // --- ゲームロジック ---
     window.startGame = function() {
@@ -203,7 +233,7 @@
         gameUI.style.display = 'block';
         
         updateScoreBoard();
-        resetRound(1); // 1 = player side
+        resetRound(1); 
 
         isPlaying = true;
         state.lastTime = performance.now();
@@ -218,13 +248,10 @@
     };
 
     function resetRound(serveDir) {
-        ball.x = 0; 
-        ball.y = 0;
-        const baseV = H / 1.0; // 1秒でH進む速度
-        ball.vx = (Math.random() - 0.5) * baseV * 0.5;
-        ball.vy = serveDir * baseV;
+        state.isServing = true;
+        ball.vx = 0;
+        ball.vy = 0;
         ball.spin = 0;
-
         player.x = 0;
         player.angle = 0;
         npc.x = 0;
@@ -232,26 +259,19 @@
     }
 
     function updatePaddleSizes() {
-        // 初期1/10。点差による変動
-        const diffP = state.nScore - state.pScore; // プレイヤーのビハインド
+        const diffP = state.nScore - state.pScore; 
         const diffN = state.pScore - state.nScore;
-
         player.width = calculatePaddleWidth(diffP, state.pScore, state.nScore);
         npc.width = calculatePaddleWidth(diffN, state.nScore, state.pScore);
     }
 
     function calculatePaddleWidth(behindPoints, myScore, enemyScore) {
         let denom = 10 - Math.max(0, behindPoints);
-        if (denom < 2) denom = 2; // 最大で1/2
-        
-        // 相手マッチポイントかつ自分0点の場合強制1/2
-        if (enemyScore >= state.winPoints - 1 && myScore === 0) {
-            denom = 2;
-        }
+        if (denom < 2) denom = 2; 
+        if (enemyScore >= state.winPoints - 1 && myScore === 0) denom = 2;
         return W / denom;
     }
 
-    // AIの学習データを保存
     function recordAITendency(hitXNormalized) {
         if (!state.aiMode) return;
         const key = `lvl${state.level}`;
@@ -266,23 +286,26 @@
     }
 
     function getAIPrediction() {
-        if (!state.aiMode) return 0; // 予測なし（中央）
+        if (!state.aiMode) return 0; 
         const key = `lvl${state.level}`;
         const data = aiData[key];
         if (!data || data.total < 5) return 0;
 
-        // 確率に基づいて予測先をずらす
         const r = Math.random() * data.total;
-        if (r < data.left) return -1; // プレイヤーは左に打ちがち
-        if (r < data.left + data.right) return 1; // 右に打ちがち
-        return 0; // 中央
+        if (r < data.left) return -1; 
+        if (r < data.left + data.right) return 1; 
+        return 0; 
     }
 
     // --- メインループ ---
     function gameLoop(time) {
         if (!isPlaying) return;
-        const dt = (time - state.lastTime) / 1000; // 秒
+        
+        // 【クラッシュ修正1】巨大な時間経過（dt）を防止
+        let dt = (time - state.lastTime) / 1000;
         state.lastTime = time;
+        if (dt > 0.1) dt = 0.1; // スリープ復帰時などのワープを防ぐ
+        if (dt <= 0) dt = 0.001; // ゼロ除算防止
 
         update(dt);
         draw();
@@ -291,133 +314,128 @@
     }
 
     function update(dt) {
-        // 1. フィールドの回転 (Level 4, 5)
+        // フィールドの回転 (Level 4, 5)
         if (state.level === 4) {
-            state.fieldAngle += (2 * Math.PI / 10) * dt; // 10秒で1回転
+            state.fieldAngle += (2 * Math.PI / 10) * dt; 
         } else if (state.level === 5) {
             state.fieldNextChange -= dt;
             if (state.fieldNextChange <= 0) {
-                state.fieldNextChange = 2.0 + Math.random() * 2.0; // 2〜4秒間隔
-                const speed = (2 * Math.PI) / (5 + Math.random() * 5); // 5〜10秒で1回転
+                state.fieldNextChange = 2.0 + Math.random() * 2.0; 
+                const speed = (2 * Math.PI) / (5 + Math.random() * 5); 
                 state.fieldAngularVelocity = (Math.random() > 0.5 ? 1 : -1) * speed;
             }
             state.fieldAngle += state.fieldAngularVelocity * dt;
         }
 
-        // 2. パドルの移動
-        const pSpeed = (0.9 * W) / 1.6; // 1.6秒で端から端
+        // パドルの移動と速度計算
+        const pSpeed = (0.9 * W) / 1.6; 
         let oldPx = player.x;
         if (keys.left) player.x -= pSpeed * dt;
         if (keys.right) player.x += pSpeed * dt;
         player.x = Math.max(-W/2 + player.width/2, Math.min(W/2 - player.width/2, player.x));
-        player.vx = (player.x - oldPx) / dt; // スピン用の速度算出
+        
+        // 【クラッシュ修正2】マウス移動による瞬間移動時の「無限速度」をキャップする
+        let rawVx = (player.x - oldPx) / dt;
+        player.vx = Math.max(-1000, Math.min(1000, rawVx)); 
 
-        // NPCの移動 (簡易AI)
-        // ボールのローカル座標を計算
+        // サーブ待機状態の処理
+        if (state.isServing) {
+            // ボールをプレイヤーパドルの直上に固定（フィールドが回転していても追従する）
+            const pLocalX = player.x;
+            const pLocalY = H/2 - 15;
+            const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
+            ball.x = pLocalX * wCos - pLocalY * wSin;
+            ball.y = pLocalX * wSin + pLocalY * wCos;
+            return; // 物理演算をスキップ
+        }
+
+        // NPCの移動
         const cos = Math.cos(-state.fieldAngle), sin = Math.sin(-state.fieldAngle);
         const localBallX = ball.x * cos - ball.y * sin;
         const localBallY = ball.x * sin + ball.y * cos;
 
         if (localBallY < 0 && ball.vy < 0) {
-            // ボールが近づいてきたら追いかける
             npc.targetX = localBallX;
         } else {
-            // 遠ざかっているときは、AIの予測に基づいてポジショニング
             const pred = getAIPrediction();
-            npc.targetX = pred * (W * 0.3); // -1, 0, 1 の予測に乗る
+            npc.targetX = pred * (W * 0.3); 
         }
         
-        // NPCの移動速度制限（レベルが上がると速くなる）
         const nSpeed = pSpeed * (0.5 + state.level * 0.1);
         if (npc.x < npc.targetX - 5) npc.x += nSpeed * dt;
         else if (npc.x > npc.targetX + 5) npc.x -= nSpeed * dt;
         npc.x = Math.max(-W/2 + npc.width/2, Math.min(W/2 - npc.width/2, npc.x));
 
-        // 3. ボールのカーブ (Level 2+)
+        // ボールのカーブ
         if (state.level >= 2 && ball.spin !== 0) {
             const vLen = Math.hypot(ball.vx, ball.vy);
             if (vLen > 0) {
-                // 進行方向の垂直ベクトル
                 const nx = -ball.vy / vLen;
                 const ny = ball.vx / vLen;
-                // マグヌス効果的な加速度
                 const curveForce = ball.spin * 2.0; 
                 ball.vx += nx * curveForce * dt;
                 ball.vy += ny * curveForce * dt;
-                // スピン減衰
                 ball.spin *= 0.99;
             }
         }
 
-        // 4. ボールの移動
         ball.x += ball.vx * dt;
         ball.y += ball.vy * dt;
 
-        // 5. 衝突判定 (ローカル座標系で行う)
-        const lbX = ball.x * cos - ball.y * sin;
-        const lbY = ball.x * sin + ball.y * cos;
+        // 衝突判定 (ローカル)
+        let lbX = ball.x * cos - ball.y * sin;
+        let lbY = ball.x * sin + ball.y * cos;
         let lvx = ball.vx * cos - ball.vy * sin;
         let lvy = ball.vx * sin + ball.vy * cos;
 
-        // 左右の壁
         if (lbX < -W/2 + 5) { lbX = -W/2 + 5; lvx = Math.abs(lvx); }
         if (lbX > W/2 - 5) { lbX = W/2 - 5; lvx = -Math.abs(lvx); }
 
-        // パドルとの衝突 (ローカル座標での簡易AABB+角度判定)
         const paddleYRadius = 5;
-        // プレイヤーパドル (下: H/2 - 20)
         const py = H/2 - 20;
         if (lbY > py - paddleYRadius && lbY < py + paddleYRadius && lvy > 0) {
-            // 回転したパドル上のローカルXを計算
             const dx = lbX - player.x;
             const dy = lbY - py;
             const pCos = Math.cos(-player.angle), pSin = Math.sin(-player.angle);
             const pxLocal = dx * pCos - dy * pSin;
             
             if (Math.abs(pxLocal) <= player.width / 2) {
-                // ヒット！
-                const hitRatio = pxLocal / (player.width / 2); // -1 to 1
-                recordAITendency(hitRatio); // AI学習
+                const hitRatio = pxLocal / (player.width / 2); 
+                recordAITendency(hitRatio); 
 
-                // 要件の数式: theta = 90 - x(60/l)
-                // x=hitRatio*l, したがって theta = 90 - hitRatio*60
-                // これをラジアンに変換し、パドル自体の角度も加算
                 const outAngleDeg = 90 - hitRatio * 60; 
                 const outAngleRad = outAngleDeg * Math.PI / 180;
                 
-                // 基準ベクトル (上向きが90度なので、計算上は -Y方向)
                 const totalAngle = outAngleRad + player.angle;
                 const vBase = H / 1.0;
                 lvx = Math.cos(totalAngle) * vBase;
-                lvy = -Math.sin(totalAngle) * vBase; // Y反転
+                lvy = -Math.sin(totalAngle) * vBase; 
 
-                // スピンの付与
-                ball.spin = player.vx * 0.5;
+                // スピンの付与（強すぎないようにキャップ）
+                ball.spin = player.vx * 0.4;
             }
         }
 
-        // NPCパドル (上: -H/2 + 20)
         const nyLine = -H/2 + 20;
         if (lbY < nyLine + paddleYRadius && lbY > nyLine - paddleYRadius && lvy < 0) {
             if (Math.abs(lbX - npc.x) <= npc.width / 2) {
                 const hitRatio = (lbX - npc.x) / (npc.width / 2);
-                const outAngleDeg = 90 + hitRatio * 60; // 下向き反射
+                const outAngleDeg = 90 + hitRatio * 60; 
                 const outAngleRad = outAngleDeg * Math.PI / 180;
                 
                 const vBase = H / 1.0;
                 lvx = Math.cos(outAngleRad) * vBase;
                 lvy = Math.sin(outAngleRad) * vBase;
                 
-                ball.spin = (Math.random()-0.5) * 100; // NPCもたまにスピン
+                ball.spin = (Math.random()-0.5) * 100; 
             }
         }
 
-        // ワールド速度に書き戻し
         const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
         ball.vx = lvx * wCos - lvy * wSin;
         ball.vy = lvx * wSin + lvy * wCos;
 
-        // 6. 得点判定 (ローカルYが H/2 を超えたら)
+        // 得点判定
         if (lbY > H/2) {
             state.nScore++;
             checkWin();
@@ -447,36 +465,29 @@
 
     // --- 描画ロジック ---
     function draw() {
-        // 背景クリア
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; // 残像効果
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; 
         ctx.fillRect(0, 0, W, H);
 
         ctx.save();
-        // 原点を中央に移動し、フィールドを回転
         ctx.translate(W/2, H/2);
         
-        // --- フィールド描画 (ローカル座標系) ---
         ctx.rotate(state.fieldAngle);
         
-        // 枠線
         ctx.strokeStyle = '#0f0';
         ctx.lineWidth = 2;
         ctx.strokeRect(-W/2, -H/2, W, H);
         
-        // センターライン
         ctx.beginPath();
         ctx.setLineDash([10, 10]);
         ctx.moveTo(-W/2, 0); ctx.lineTo(W/2, 0);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // NPCパドル (赤)
         ctx.fillStyle = '#f00';
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#f00';
         ctx.fillRect(npc.x - npc.width/2, -H/2 + 15, npc.width, 10);
 
-        // Playerパドル (シアン) - 角度対応
         ctx.save();
         ctx.translate(player.x, H/2 - 20);
         ctx.rotate(player.angle);
@@ -485,12 +496,23 @@
         ctx.fillRect(-player.width/2, -5, player.width, 10);
         ctx.restore();
 
-        // 状態を戻して、ボールはワールド座標で描画
+        // TAP TO SERVE のテキスト表示
+        if (state.isServing) {
+            ctx.fillStyle = '#0ff';
+            ctx.shadowColor = 'transparent';
+            ctx.font = 'bold 20px Courier New';
+            ctx.textAlign = 'center';
+            // 0.5秒おきに点滅
+            if (Math.floor(Date.now() / 500) % 2 === 0) {
+                ctx.fillText("TAP TO SERVE", 0, 50);
+            }
+        }
+
         ctx.restore();
 
-        // ボール (黄色ネオン)
+        // ボール
         ctx.save();
-        ctx.translate(W/2, H/2); // 原点だけ中央に
+        ctx.translate(W/2, H/2); 
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2);
         ctx.fillStyle = '#ff0';
