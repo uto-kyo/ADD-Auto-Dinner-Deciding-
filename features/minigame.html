@@ -1,0 +1,503 @@
+<style>
+    .minigame-wrapper {
+        background-color: #050510;
+        color: #0ff;
+        font-family: 'Courier New', Courier, monospace;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        max-width: 400px;
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+        box-sizing: border-box;
+    }
+    .neon-text {
+        text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
+        margin-bottom: 15px;
+        font-weight: bold;
+    }
+    .game-settings {
+        background: rgba(0, 50, 50, 0.5);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #0ff;
+        margin-bottom: 15px;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+    .game-settings select, .game-settings input {
+        background: #000;
+        color: #0ff;
+        border: 1px solid #0ff;
+        padding: 5px;
+        border-radius: 4px;
+        margin-top: 5px;
+    }
+    canvas {
+        background-color: #000;
+        border: 2px solid #0f0;
+        box-shadow: 0 0 15px #0f0 inset, 0 0 15px #0f0;
+        display: block;
+        margin: 0 auto;
+        touch-action: none; /* スマホスクロール防止 */
+    }
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 15px;
+        gap: 10px;
+    }
+    .btn-neon {
+        flex: 1;
+        background: transparent;
+        color: #0f0;
+        border: 1px solid #0f0;
+        padding: 10px 0;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 6px;
+        text-shadow: 0 0 5px #0f0;
+        box-shadow: 0 0 5px #0f0 inset;
+        cursor: pointer;
+        user-select: none;
+    }
+    .btn-neon:active { background: rgba(0, 255, 0, 0.2); }
+    .score-board {
+        display: flex;
+        justify-content: space-around;
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        color: #f0f;
+        text-shadow: 0 0 5px #f0f;
+    }
+</style>
+
+<div class="minigame-wrapper">
+    <h2 class="neon-text">CYBER PONG AI</h2>
+    
+    <div class="game-settings" id="setupUI">
+        <label>Level: 
+            <select id="gameLevel">
+                <option value="1">1: 通常 (Normal)</option>
+                <option value="2">2: 回転球 (Hard)</option>
+                <option value="3">3: パドル角度 (Very Hard)</option>
+                <option value="4">4: 回転領域 (Fantastic)</option>
+                <option value="5">5: 狂気回転 (Final)</option>
+            </select>
+        </label><br>
+        <label style="margin-top:10px; display:inline-block;">
+            <input type="checkbox" id="aiMode"> ボトムアップ(AI学習)モード
+        </label><br>
+        <label style="margin-top:10px; display:inline-block;">
+            目標Pt: <input type="number" id="winPoints" value="5" min="1" max="99" style="width:50px;">
+        </label>
+        <button class="btn-neon" style="width:100%; margin-top:10px;" onclick="startGame()">GAME START</button>
+    </div>
+
+    <div id="gameUI" style="display:none;">
+        <div class="score-board">
+            <span id="npcScore">NPC: 0</span>
+            <span id="playerScore">YOU: 0</span>
+        </div>
+        <canvas id="gameCanvas" width="300" height="400"></canvas>
+        
+        <div class="controls">
+            <button class="btn-neon" id="btnLeft">◀</button>
+            <button class="btn-neon" id="btnRotateL" style="font-size:0.9rem;">↺角</button>
+            <button class="btn-neon" id="btnRotateR" style="font-size:0.9rem;">角↻</button>
+            <button class="btn-neon" id="btnRight">▶</button>
+        </div>
+        <button class="btn-neon" style="width:100%; margin-top:10px; color:#f00; border-color:#f00;" onclick="stopGame()">QUIT</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const setupUI = document.getElementById('setupUI');
+    const gameUI = document.getElementById('gameUI');
+    const playerScoreEl = document.getElementById('playerScore');
+    const npcScoreEl = document.getElementById('npcScore');
+    
+    let animationId;
+    let isPlaying = false;
+
+    // ゲーム状態
+    let state = {
+        level: 1,
+        aiMode: false,
+        winPoints: 5,
+        pScore: 0,
+        nScore: 0,
+        fieldAngle: 0,
+        fieldAngularVelocity: 0,
+        lastTime: 0,
+        fieldNextChange: 0
+    };
+
+    // オブジェクト
+    const W = canvas.width;
+    const H = canvas.height;
+    
+    let ball = { x: 0, y: 0, vx: 0, vy: 0, spin: 0 }; // ワールド座標
+    let player = { x: 0, width: W/10, angle: 0, vx: 0 }; // ローカル座標
+    let npc = { x: 0, width: W/10, targetX: 0 }; // ローカル座標
+
+    // コントロール状態
+    const keys = { left: false, right: false };
+
+    // AI学習データ (ローカルストレージ)
+    let aiData = JSON.parse(localStorage.getItem('cyberPongAIData')) || {};
+
+    // --- コントロールバインディング ---
+    const btnL = document.getElementById('btnLeft');
+    const btnR = document.getElementById('btnRight');
+    const btnRotL = document.getElementById('btnRotateL');
+    const btnRotR = document.getElementById('btnRotateR');
+
+    const pressLeft = () => keys.left = true;
+    const releaseLeft = () => keys.left = false;
+    const pressRight = () => keys.right = true;
+    const releaseRight = () => keys.right = false;
+
+    btnL.addEventListener('mousedown', pressLeft); btnL.addEventListener('touchstart', pressLeft, {passive:true});
+    btnL.addEventListener('mouseup', releaseLeft); btnL.addEventListener('touchend', releaseLeft);
+    btnR.addEventListener('mousedown', pressRight); btnR.addEventListener('touchstart', pressRight, {passive:true});
+    btnR.addEventListener('mouseup', releaseRight); btnR.addEventListener('touchend', releaseRight);
+    
+    // パドル角度操作
+    const rotatePaddle = (dir) => {
+        if (state.level >= 3) {
+            player.angle += dir * (Math.PI / 4); // 45度
+            if (player.angle >= Math.PI) player.angle -= Math.PI;
+            if (player.angle <= -Math.PI) player.angle += Math.PI;
+        }
+    };
+    btnRotL.addEventListener('mousedown', () => rotatePaddle(-1));
+    btnRotR.addEventListener('mousedown', () => rotatePaddle(1));
+
+    // ドラッグ操作
+    canvas.addEventListener('touchmove', (e) => {
+        if(!isPlaying) return;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        const rawX = touch.clientX - rect.left - W/2;
+        // 簡易的にワールドのXをローカルのXとして扱う（厳密な逆回転は省略し操作性優先）
+        player.x = Math.max(-W/2 + player.width/2, Math.min(W/2 - player.width/2, rawX));
+    }, {passive:true});
+
+    // --- ゲームロジック ---
+    window.startGame = function() {
+        state.level = parseInt(document.getElementById('gameLevel').value);
+        state.aiMode = document.getElementById('aiMode').checked;
+        state.winPoints = parseInt(document.getElementById('winPoints').value);
+        state.pScore = 0;
+        state.nScore = 0;
+        state.fieldAngle = 0;
+        
+        setupUI.style.display = 'none';
+        gameUI.style.display = 'block';
+        
+        updateScoreBoard();
+        resetRound(1); // 1 = player side
+
+        isPlaying = true;
+        state.lastTime = performance.now();
+        animationId = requestAnimationFrame(gameLoop);
+    };
+
+    window.stopGame = function() {
+        isPlaying = false;
+        cancelAnimationFrame(animationId);
+        setupUI.style.display = 'block';
+        gameUI.style.display = 'none';
+    };
+
+    function resetRound(serveDir) {
+        ball.x = 0; 
+        ball.y = 0;
+        const baseV = H / 1.0; // 1秒でH進む速度
+        ball.vx = (Math.random() - 0.5) * baseV * 0.5;
+        ball.vy = serveDir * baseV;
+        ball.spin = 0;
+
+        player.x = 0;
+        player.angle = 0;
+        npc.x = 0;
+        updatePaddleSizes();
+    }
+
+    function updatePaddleSizes() {
+        // 初期1/10。点差による変動
+        const diffP = state.nScore - state.pScore; // プレイヤーのビハインド
+        const diffN = state.pScore - state.nScore;
+
+        player.width = calculatePaddleWidth(diffP, state.pScore, state.nScore);
+        npc.width = calculatePaddleWidth(diffN, state.nScore, state.pScore);
+    }
+
+    function calculatePaddleWidth(behindPoints, myScore, enemyScore) {
+        let denom = 10 - Math.max(0, behindPoints);
+        if (denom < 2) denom = 2; // 最大で1/2
+        
+        // 相手マッチポイントかつ自分0点の場合強制1/2
+        if (enemyScore >= state.winPoints - 1 && myScore === 0) {
+            denom = 2;
+        }
+        return W / denom;
+    }
+
+    // AIの学習データを保存
+    function recordAITendency(hitXNormalized) {
+        if (!state.aiMode) return;
+        const key = `lvl${state.level}`;
+        if (!aiData[key]) aiData[key] = { left: 0, center: 0, right: 0, total: 0 };
+        
+        if (hitXNormalized < -0.3) aiData[key].left++;
+        else if (hitXNormalized > 0.3) aiData[key].right++;
+        else aiData[key].center++;
+        
+        aiData[key].total++;
+        localStorage.setItem('cyberPongAIData', JSON.stringify(aiData));
+    }
+
+    function getAIPrediction() {
+        if (!state.aiMode) return 0; // 予測なし（中央）
+        const key = `lvl${state.level}`;
+        const data = aiData[key];
+        if (!data || data.total < 5) return 0;
+
+        // 確率に基づいて予測先をずらす
+        const r = Math.random() * data.total;
+        if (r < data.left) return -1; // プレイヤーは左に打ちがち
+        if (r < data.left + data.right) return 1; // 右に打ちがち
+        return 0; // 中央
+    }
+
+    // --- メインループ ---
+    function gameLoop(time) {
+        if (!isPlaying) return;
+        const dt = (time - state.lastTime) / 1000; // 秒
+        state.lastTime = time;
+
+        update(dt);
+        draw();
+
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function update(dt) {
+        // 1. フィールドの回転 (Level 4, 5)
+        if (state.level === 4) {
+            state.fieldAngle += (2 * Math.PI / 10) * dt; // 10秒で1回転
+        } else if (state.level === 5) {
+            state.fieldNextChange -= dt;
+            if (state.fieldNextChange <= 0) {
+                state.fieldNextChange = 2.0 + Math.random() * 2.0; // 2〜4秒間隔
+                const speed = (2 * Math.PI) / (5 + Math.random() * 5); // 5〜10秒で1回転
+                state.fieldAngularVelocity = (Math.random() > 0.5 ? 1 : -1) * speed;
+            }
+            state.fieldAngle += state.fieldAngularVelocity * dt;
+        }
+
+        // 2. パドルの移動
+        const pSpeed = (0.9 * W) / 1.6; // 1.6秒で端から端
+        let oldPx = player.x;
+        if (keys.left) player.x -= pSpeed * dt;
+        if (keys.right) player.x += pSpeed * dt;
+        player.x = Math.max(-W/2 + player.width/2, Math.min(W/2 - player.width/2, player.x));
+        player.vx = (player.x - oldPx) / dt; // スピン用の速度算出
+
+        // NPCの移動 (簡易AI)
+        // ボールのローカル座標を計算
+        const cos = Math.cos(-state.fieldAngle), sin = Math.sin(-state.fieldAngle);
+        const localBallX = ball.x * cos - ball.y * sin;
+        const localBallY = ball.x * sin + ball.y * cos;
+
+        if (localBallY < 0 && ball.vy < 0) {
+            // ボールが近づいてきたら追いかける
+            npc.targetX = localBallX;
+        } else {
+            // 遠ざかっているときは、AIの予測に基づいてポジショニング
+            const pred = getAIPrediction();
+            npc.targetX = pred * (W * 0.3); // -1, 0, 1 の予測に乗る
+        }
+        
+        // NPCの移動速度制限（レベルが上がると速くなる）
+        const nSpeed = pSpeed * (0.5 + state.level * 0.1);
+        if (npc.x < npc.targetX - 5) npc.x += nSpeed * dt;
+        else if (npc.x > npc.targetX + 5) npc.x -= nSpeed * dt;
+        npc.x = Math.max(-W/2 + npc.width/2, Math.min(W/2 - npc.width/2, npc.x));
+
+        // 3. ボールのカーブ (Level 2+)
+        if (state.level >= 2 && ball.spin !== 0) {
+            const vLen = Math.hypot(ball.vx, ball.vy);
+            if (vLen > 0) {
+                // 進行方向の垂直ベクトル
+                const nx = -ball.vy / vLen;
+                const ny = ball.vx / vLen;
+                // マグヌス効果的な加速度
+                const curveForce = ball.spin * 2.0; 
+                ball.vx += nx * curveForce * dt;
+                ball.vy += ny * curveForce * dt;
+                // スピン減衰
+                ball.spin *= 0.99;
+            }
+        }
+
+        // 4. ボールの移動
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+
+        // 5. 衝突判定 (ローカル座標系で行う)
+        const lbX = ball.x * cos - ball.y * sin;
+        const lbY = ball.x * sin + ball.y * cos;
+        let lvx = ball.vx * cos - ball.vy * sin;
+        let lvy = ball.vx * sin + ball.vy * cos;
+
+        // 左右の壁
+        if (lbX < -W/2 + 5) { lbX = -W/2 + 5; lvx = Math.abs(lvx); }
+        if (lbX > W/2 - 5) { lbX = W/2 - 5; lvx = -Math.abs(lvx); }
+
+        // パドルとの衝突 (ローカル座標での簡易AABB+角度判定)
+        const paddleYRadius = 5;
+        // プレイヤーパドル (下: H/2 - 20)
+        const py = H/2 - 20;
+        if (lbY > py - paddleYRadius && lbY < py + paddleYRadius && lvy > 0) {
+            // 回転したパドル上のローカルXを計算
+            const dx = lbX - player.x;
+            const dy = lbY - py;
+            const pCos = Math.cos(-player.angle), pSin = Math.sin(-player.angle);
+            const pxLocal = dx * pCos - dy * pSin;
+            
+            if (Math.abs(pxLocal) <= player.width / 2) {
+                // ヒット！
+                const hitRatio = pxLocal / (player.width / 2); // -1 to 1
+                recordAITendency(hitRatio); // AI学習
+
+                // 要件の数式: theta = 90 - x(60/l)
+                // x=hitRatio*l, したがって theta = 90 - hitRatio*60
+                // これをラジアンに変換し、パドル自体の角度も加算
+                const outAngleDeg = 90 - hitRatio * 60; 
+                const outAngleRad = outAngleDeg * Math.PI / 180;
+                
+                // 基準ベクトル (上向きが90度なので、計算上は -Y方向)
+                const totalAngle = outAngleRad + player.angle;
+                const vBase = H / 1.0;
+                lvx = Math.cos(totalAngle) * vBase;
+                lvy = -Math.sin(totalAngle) * vBase; // Y反転
+
+                // スピンの付与
+                ball.spin = player.vx * 0.5;
+            }
+        }
+
+        // NPCパドル (上: -H/2 + 20)
+        const nyLine = -H/2 + 20;
+        if (lbY < nyLine + paddleYRadius && lbY > nyLine - paddleYRadius && lvy < 0) {
+            if (Math.abs(lbX - npc.x) <= npc.width / 2) {
+                const hitRatio = (lbX - npc.x) / (npc.width / 2);
+                const outAngleDeg = 90 + hitRatio * 60; // 下向き反射
+                const outAngleRad = outAngleDeg * Math.PI / 180;
+                
+                const vBase = H / 1.0;
+                lvx = Math.cos(outAngleRad) * vBase;
+                lvy = Math.sin(outAngleRad) * vBase;
+                
+                ball.spin = (Math.random()-0.5) * 100; // NPCもたまにスピン
+            }
+        }
+
+        // ワールド速度に書き戻し
+        const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
+        ball.vx = lvx * wCos - lvy * wSin;
+        ball.vy = lvx * wSin + lvy * wCos;
+
+        // 6. 得点判定 (ローカルYが H/2 を超えたら)
+        if (lbY > H/2) {
+            state.nScore++;
+            checkWin();
+            if(isPlaying) resetRound(1);
+        } else if (lbY < -H/2) {
+            state.pScore++;
+            checkWin();
+            if(isPlaying) resetRound(-1);
+        }
+    }
+
+    function checkWin() {
+        updateScoreBoard();
+        if (state.pScore >= state.winPoints && state.pScore - state.nScore >= 2) {
+            alert("✨ YOU WIN! ✨\nAIを凌駕しました！");
+            stopGame();
+        } else if (state.nScore >= state.winPoints && state.nScore - state.pScore >= 2) {
+            alert("💀 YOU LOSE...\nAIに敗北しました。");
+            stopGame();
+        }
+    }
+
+    function updateScoreBoard() {
+        playerScoreEl.textContent = `YOU: ${state.pScore}`;
+        npcScoreEl.textContent = `NPC: ${state.nScore}`;
+    }
+
+    // --- 描画ロジック ---
+    function draw() {
+        // 背景クリア
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; // 残像効果
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.save();
+        // 原点を中央に移動し、フィールドを回転
+        ctx.translate(W/2, H/2);
+        
+        // --- フィールド描画 (ローカル座標系) ---
+        ctx.rotate(state.fieldAngle);
+        
+        // 枠線
+        ctx.strokeStyle = '#0f0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-W/2, -H/2, W, H);
+        
+        // センターライン
+        ctx.beginPath();
+        ctx.setLineDash([10, 10]);
+        ctx.moveTo(-W/2, 0); ctx.lineTo(W/2, 0);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // NPCパドル (赤)
+        ctx.fillStyle = '#f00';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#f00';
+        ctx.fillRect(npc.x - npc.width/2, -H/2 + 15, npc.width, 10);
+
+        // Playerパドル (シアン) - 角度対応
+        ctx.save();
+        ctx.translate(player.x, H/2 - 20);
+        ctx.rotate(player.angle);
+        ctx.fillStyle = '#0ff';
+        ctx.shadowColor = '#0ff';
+        ctx.fillRect(-player.width/2, -5, player.width, 10);
+        ctx.restore();
+
+        // 状態を戻して、ボールはワールド座標で描画
+        ctx.restore();
+
+        // ボール (黄色ネオン)
+        ctx.save();
+        ctx.translate(W/2, H/2); // 原点だけ中央に
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff0';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ff0';
+        ctx.fill();
+        ctx.restore();
+    }
+})();
+</script>
