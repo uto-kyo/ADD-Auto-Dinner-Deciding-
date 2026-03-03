@@ -187,7 +187,7 @@
         padding: 20px;
         border-radius: 12px;
         width: 90%;
-        max-width: 550px;
+        max-width: 600px;
         max-height: 90vh;
         overflow-y: auto;
         box-sizing: border-box;
@@ -378,26 +378,34 @@
 
 <script>
     (function () {
+        // 単位区分（追加要件をすべて網羅）
         let categories = [
             { id: 'all', name: '《総合計》', parent: null, current: 0, reqRes: 100, reqGrad: 124, depth: 0 },
             { id: 'com', name: '全学共通《合計》', parent: 'all', current: 0, reqRes: 20, reqGrad: 24, depth: 1 },
             { id: 'com_eng', name: '全学共通 英語必修', parent: 'com', current: 0, reqRes: 4, reqGrad: 4, depth: 2 },
             { id: 'com_base', name: '全学共通 基盤教養', parent: 'com', current: 0, reqRes: 6, reqGrad: 8, depth: 2 },
+            { id: 'com_prac', name: '全学共通 実践教養', parent: 'com', current: 0, reqRes: 2, reqGrad: 2, depth: 2 },
+            { id: 'com_high', name: '全学共通 高年次', parent: 'com', current: 0, reqRes: 2, reqGrad: 2, depth: 2 },
+
             { id: 'pro', name: '専門教育《合計》', parent: 'all', current: 0, reqRes: 40, reqGrad: 60, depth: 1 },
             { id: 'pro_base', name: '専門基礎《合計》', parent: 'pro', current: 0, reqRes: 20, reqGrad: 24, depth: 2 },
+            { id: 'pro_intro_req', name: '専門導入 必修', parent: 'pro_base', current: 0, reqRes: 4, reqGrad: 4, depth: 3 },
+            { id: 'pro_intro_sel', name: '専門導入 選択', parent: 'pro_base', current: 0, reqRes: 2, reqGrad: 4, depth: 3 },
             { id: 'pro_b_req', name: '専門基礎 必修', parent: 'pro_base', current: 0, reqRes: 10, reqGrad: 10, depth: 3 },
-            { id: 'pro_b_sel', name: '専門基礎 選択', parent: 'pro_base', current: 0, reqRes: 4, reqGrad: 6, depth: 3 },
+            { id: 'pro_b_selreq', name: '専門基礎 選必', parent: 'pro_base', current: 0, reqRes: 2, reqGrad: 2, depth: 3 },
+            { id: 'pro_b_sel', name: '専門基礎 選択', parent: 'pro_base', current: 0, reqRes: 2, reqGrad: 4, depth: 3 },
+
             { id: 'pro_adv', name: '課程専門《合計》', parent: 'pro', current: 0, reqRes: 20, reqGrad: 30, depth: 2 },
             { id: 'pro_a_req', name: '課程専門 必修', parent: 'pro_adv', current: 0, reqRes: 10, reqGrad: 12, depth: 3 },
-            { id: 'pro_a_sel', name: '課程専門 選択', parent: 'pro_adv', current: 0, reqRes: 4, reqGrad: 10, depth: 3 }
+            { id: 'pro_a_selreq', name: '課程専門 選必', parent: 'pro_adv', current: 0, reqRes: 4, reqGrad: 6, depth: 3 },
+            { id: 'pro_a_sel', name: '課程専門 選択', parent: 'pro_adv', current: 0, reqRes: 6, reqGrad: 8, depth: 3 },
+            { id: 'pro_a_grad', name: '卒業研究', parent: 'pro_adv', current: 0, reqRes: 0, reqGrad: 4, depth: 3 }
         ];
 
-        // periods配列に変更 (連続コマ対応)
         let subjects = [
             { id: 1, name: '力学', credits: 2, term: '前期', day: 1, periods: [2], catId: 'pro_b_req', isReq: true, isFixed: true },
             { id: 2, name: '物理学', credits: 2, term: '前期', day: 1, periods: [2], catId: 'pro_b_sel', isReq: false, isFixed: false },
             { id: 3, name: '英語リーディング', credits: 2, term: '前期', day: 2, periods: [1], catId: 'com_eng', isReq: true, isFixed: true },
-            // 連続コマのサンプル
             { id: 4, name: 'プログラミング演習', credits: 2, term: '後期', day: 3, periods: [3, 4], catId: 'pro_a_sel', isReq: false, isFixed: false }
         ];
 
@@ -458,7 +466,6 @@
             if (!name) return alert("科目名を入力してください");
             if (pEnd < pStart) return alert("終了時限は開始時限以降を選択してください");
 
-            // 連続コマの配列を生成 [1, 2] など
             let pArray = [];
             for (let i = pStart; i <= pEnd; i++) pArray.push(i);
 
@@ -534,7 +541,7 @@
         // 単位計算
         function calculateCredits() {
             const grade = parseInt(document.getElementById('gradeSelect').value);
-            const isGrad = grade >= 4; // ★ 4年生のみ卒業目標、1〜3年は卒研着手
+            const isGrad = grade >= 4;
 
             let calc = {};
             categories.forEach(c => {
@@ -584,7 +591,6 @@
             for (let p = 1; p <= 5; p++) {
                 ttHtml += `<div class="tt-time">${p}限</div>`;
                 for (let d = 1; d <= 5; d++) {
-                    // 該当学期、曜日で、periods配列の中に現在の時限pが含まれるものを抽出
                     const cellSubs = subjects.filter(s => s.term === term && s.day === d && s.periods.includes(p));
                     let cellHtml = `<div class="tt-cell">`;
                     const fixedSub = cellSubs.find(s => s.isFixed);
@@ -596,7 +602,6 @@
                         if (fixedSub && !s.isFixed) {
                             cellHtml += `<div class="subject-badge" style="background:#eee; color:#aaa; text-decoration:line-through;">${s.name}</div>`;
                         } else {
-                            // 連続コマの場合、表示に幅を持たせる工夫など
                             const isStart = s.periods[0] === p;
                             const label = isStart ? `${s.name}<br>(${s.credits}単)` : `(${s.name} 続き)`;
                             cellHtml += `<div class="${btnClass}" onclick="toggleSubject(${s.id})">${label}</div>`;
@@ -637,9 +642,7 @@
                     catCands.forEach(s => {
                         const pStr = s.periods.length > 1 ? `${Math.min(...s.periods)}-${Math.max(...s.periods)}限` : `${s.periods[0]}限`;
 
-                        // 被り判定：自身が持っている時限のどれかが、確定科目の時限と被っているか
                         const isConflict = subjects.some(fs => fs.isFixed && fs.term === s.term && fs.day === s.day && fs.periods.some(fp => s.periods.includes(fp)));
-                        // CAP上限判定
                         const isCapOver = (currentFixedCredits + s.credits) > capLimit;
 
                         if (isConflict) {
@@ -651,7 +654,6 @@
                         }
                     });
                     text += `</div>`;
-                    // 中身の科目があるかチェック（すべてunavailに行った場合は空divになるため除外）
                     if (text.includes('・')) availHtml += text;
                 } else {
                     catCands.forEach(s => {
