@@ -3,10 +3,12 @@
         background-color: #050510 !important;
         padding-top: 80px !important;
     }
+
     body:has(.minigame-wrapper) header {
         background-color: #000 !important;
         border-bottom: 2px solid #0ff !important;
     }
+
     body:has(.minigame-wrapper) header select {
         background-color: #111 !important;
         color: #0ff !important;
@@ -26,12 +28,14 @@
         box-sizing: border-box;
         background: #0a0a1a;
     }
+
     .neon-text {
         text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
         margin-bottom: 15px;
         font-weight: bold;
         letter-spacing: 2px;
     }
+
     .game-settings {
         background: rgba(0, 50, 50, 0.5);
         padding: 15px;
@@ -41,7 +45,9 @@
         text-align: left;
         font-size: 0.95rem;
     }
-    .game-settings select, .game-settings input {
+
+    .game-settings select,
+    .game-settings input {
         background: #000;
         color: #0ff;
         border: 1px solid #0ff;
@@ -50,27 +56,31 @@
         margin-top: 5px;
         font-family: inherit;
     }
+
     .setting-row {
         display: flex;
         align-items: center;
         gap: 10px;
         margin-top: 10px;
     }
+
     canvas {
         background-color: #000;
-        border: 1px solid #111; 
-        box-shadow: 0 0 20px rgba(0,255,255,0.1);
+        border: 1px solid #111;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
         display: block;
         margin: 0 auto;
         touch-action: none;
         cursor: crosshair;
     }
+
     .controls {
         display: flex;
         justify-content: space-between;
         margin-top: 15px;
         gap: 10px;
     }
+
     .btn-neon {
         flex: 1;
         background: rgba(0, 255, 255, 0.05);
@@ -86,7 +96,12 @@
         user-select: none;
         transition: all 0.1s;
     }
-    .btn-neon:active { background: rgba(0, 255, 0, 0.2); transform: scale(0.95); }
+
+    .btn-neon:active {
+        background: rgba(0, 255, 0, 0.2);
+        transform: scale(0.95);
+    }
+
     .score-board {
         display: flex;
         justify-content: space-around;
@@ -96,6 +111,7 @@
         text-shadow: 0 0 10px #f0f;
         font-weight: bold;
     }
+
     #errorOutput {
         color: red;
         font-weight: bold;
@@ -106,9 +122,9 @@
 
 <div class="minigame-wrapper">
     <h2 class="neon-text">CYBER PONG AI</h2>
-    
+
     <div class="game-settings" id="setupUI">
-        <label>ルール・ギミック: 
+        <label>ルール・ギミック:
             <select id="gameLevel" style="width:100%;">
                 <option value="1">1: 通常 (Normal)</option>
                 <option value="2">2: 回転球 (Hard)</option>
@@ -117,15 +133,20 @@
                 <option value="5">5: 狂気回転 (Final)</option>
             </select>
         </label>
-        
+
         <div class="setting-row">
-            <label>NPC強さ (1-10): 
+            <label>NPC強さ (1-10):
                 <select id="npcLevel" style="width:60px;">
-                    <option value="1">1</option><option value="2">2</option>
-                    <option value="3" selected>3</option><option value="4">4</option>
-                    <option value="5">5</option><option value="6">6</option>
-                    <option value="7">7</option><option value="8">8</option>
-                    <option value="9">9</option><option value="10">10</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
                 </select>
             </label>
         </div>
@@ -136,15 +157,17 @@
         <label style="margin-top:10px; display:inline-block;">
             <input type="checkbox" id="aiMode"> 🧠 ボトムアップ(AI学習)モード
         </label>
-        
+
         <div class="setting-row">
             <label>目標Pt: <input type="number" id="winPoints" value="5" min="1" max="99" style="width:50px;"></label>
         </div>
         <label style="margin-top:5px; display:inline-block; color:#ff0;">
             <input type="checkbox" id="winByTwo" checked> 2点差以上で勝利 (Deuce)
         </label>
-        
-        <button class="btn-neon" style="width:100%; margin-top:20px; color:#0ff; border-color:#0ff; box-shadow: 0 0 5px #0ff inset;" onclick="startGame()">SYSTEM START</button>
+
+        <button class="btn-neon"
+            style="width:100%; margin-top:20px; color:#0ff; border-color:#0ff; box-shadow: 0 0 5px #0ff inset;"
+            onclick="startGame()">SYSTEM START</button>
         <div id="errorOutput"></div>
     </div>
 
@@ -153,525 +176,527 @@
             <span id="npcScore">NPC: 0</span>
             <span id="playerScore">YOU: 0</span>
         </div>
-        
+
         <canvas id="gameCanvas" width="400" height="400"></canvas>
-        
+
         <div class="controls">
             <button class="btn-neon" id="btnLeft">◀</button>
             <button class="btn-neon" id="btnRotateL" style="font-size:0.9rem;">↺角</button>
             <button class="btn-neon" id="btnRotateR" style="font-size:0.9rem;">角↻</button>
             <button class="btn-neon" id="btnRight">▶</button>
         </div>
-        <button class="btn-neon" style="width:100%; margin-top:10px; color:#f00; border-color:#f00; box-shadow: 0 0 5px #f00 inset;" onclick="stopGame()">EMERGENCY QUIT</button>
+        <button class="btn-neon"
+            style="width:100%; margin-top:10px; color:#f00; border-color:#f00; box-shadow: 0 0 5px #f00 inset;"
+            onclick="stopGame()">EMERGENCY QUIT</button>
     </div>
 </div>
 
 <script>
-(function() {
-    try {
-        const canvas = document.getElementById('gameCanvas');
-        if (!canvas) throw new Error("Canvas element not found.");
-        const ctx = canvas.getContext('2d');
-        
-        const setupUI = document.getElementById('setupUI');
-        const gameUI = document.getElementById('gameUI');
-        const playerScoreEl = document.getElementById('playerScore');
-        const npcScoreEl = document.getElementById('npcScore');
-        
-        let animationId;
-
-        let state = {
-            status: 'setup', 
-            level: 1,
-            npcLevel: 3,
-            freeMode: false,
-            aiMode: false,
-            winPoints: 5,
-            winByTwo: true,
-            pScore: 0,
-            nScore: 0,
-            fieldAngle: 0,
-            fieldAngularVelocity: 0,
-            lastTime: 0,
-            fieldNextChange: 0,
-            isServing: false,
-            isDragging: false
-        };
-
-        const W = canvas.width;
-        const H = canvas.height;
-        const fW = 280; 
-        const fH = 280;
-        
-        let ball = { x: 0, y: 0, vx: 0, vy: 0, spin: 0 }; 
-        let player = { x: 0, y: fH/2 - 20, width: fW/8, angle: 0, vx: 0, vy: 0 }; 
-        let npc = { x: 0, y: -fH/2 + 20, width: fW/8, angle: 0, vx: 0, vy: 0, targetX: 0, targetAngle: 0, targetY: 0 }; 
-
-        const keys = { left: false, right: false };
-        let aiData = {};
+    (function () {
         try {
-            aiData = JSON.parse(localStorage.getItem('cyberPongAIData')) || {};
-        } catch (e) {
-            console.warn("AI Data parse failed, resetting.");
-        }
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) throw new Error("Canvas element not found.");
+            const ctx = canvas.getContext('2d');
 
-        const btnL = document.getElementById('btnLeft');
-        const btnR = document.getElementById('btnRight');
-        const btnRotL = document.getElementById('btnRotateL');
-        const btnRotR = document.getElementById('btnRotateR');
+            const setupUI = document.getElementById('setupUI');
+            const gameUI = document.getElementById('gameUI');
+            const playerScoreEl = document.getElementById('playerScore');
+            const npcScoreEl = document.getElementById('npcScore');
 
-        if (!btnL || !btnR) throw new Error("Control buttons not found.");
+            let animationId;
 
-        const pressLeft = () => keys.left = true;
-        const releaseLeft = () => keys.left = false;
-        const pressRight = () => keys.right = true;
-        const releaseRight = () => keys.right = false;
+            let state = {
+                status: 'setup',
+                level: 1,
+                npcLevel: 3,
+                freeMode: false,
+                aiMode: false,
+                winPoints: 5,
+                winByTwo: true,
+                pScore: 0,
+                nScore: 0,
+                fieldAngle: 0,
+                fieldAngularVelocity: 0,
+                lastTime: 0,
+                fieldNextChange: 0,
+                isServing: false,
+                isDragging: false
+            };
 
-        btnL.addEventListener('mousedown', pressLeft); btnL.addEventListener('touchstart', pressLeft, {passive:true});
-        btnL.addEventListener('mouseup', releaseLeft); btnL.addEventListener('touchend', releaseLeft);
-        btnR.addEventListener('mousedown', pressRight); btnR.addEventListener('touchstart', pressRight, {passive:true});
-        btnR.addEventListener('mouseup', releaseRight); btnR.addEventListener('touchend', releaseRight);
-        
-        const rotatePaddle = (dir) => {
-            if (state.level >= 3 && state.status === 'playing') {
-                player.angle += dir * (Math.PI / 4); 
-                if (player.angle >= Math.PI) player.angle -= Math.PI;
-                if (player.angle <= -Math.PI) player.angle += Math.PI;
+            const W = canvas.width;
+            const H = canvas.height;
+            const fW = 280;
+            const fH = 280;
+
+            let ball = { x: 0, y: 0, vx: 0, vy: 0, spin: 0 };
+            let player = { x: 0, y: fH / 2 - 20, width: fW / 8, angle: 0, vx: 0, vy: 0 };
+            let npc = { x: 0, y: -fH / 2 + 20, width: fW / 8, angle: 0, vx: 0, vy: 0, targetX: 0, targetAngle: 0, targetY: 0 };
+
+            const keys = { left: false, right: false };
+            let aiData = {};
+            try {
+                aiData = JSON.parse(localStorage.getItem('cyberPongAIData')) || {};
+            } catch (e) {
+                console.warn("AI Data parse failed, resetting.");
             }
-        };
-        btnRotL.addEventListener('mousedown', () => rotatePaddle(-1));
-        btnRotR.addEventListener('mousedown', () => rotatePaddle(1));
 
-        function triggerServe() {
-            if (state.isServing && state.status === 'playing') {
-                state.isServing = false;
-                const baseV = fH / 1.0;
-                const lvx = (Math.random() - 0.5) * baseV * 0.5;
-                const lvy = -baseV;
+            const btnL = document.getElementById('btnLeft');
+            const btnR = document.getElementById('btnRight');
+            const btnRotL = document.getElementById('btnRotateL');
+            const btnRotR = document.getElementById('btnRotateR');
+
+            if (!btnL || !btnR) throw new Error("Control buttons not found.");
+
+            const pressLeft = () => keys.left = true;
+            const releaseLeft = () => keys.left = false;
+            const pressRight = () => keys.right = true;
+            const releaseRight = () => keys.right = false;
+
+            btnL.addEventListener('mousedown', pressLeft); btnL.addEventListener('touchstart', pressLeft, { passive: true });
+            btnL.addEventListener('mouseup', releaseLeft); btnL.addEventListener('touchend', releaseLeft);
+            btnR.addEventListener('mousedown', pressRight); btnR.addEventListener('touchstart', pressRight, { passive: true });
+            btnR.addEventListener('mouseup', releaseRight); btnR.addEventListener('touchend', releaseRight);
+
+            const rotatePaddle = (dir) => {
+                if (state.level >= 3 && state.status === 'playing') {
+                    player.angle += dir * (Math.PI / 4);
+                    if (player.angle >= Math.PI) player.angle -= Math.PI;
+                    if (player.angle <= -Math.PI) player.angle += Math.PI;
+                }
+            };
+            btnRotL.addEventListener('mousedown', () => rotatePaddle(-1));
+            btnRotR.addEventListener('mousedown', () => rotatePaddle(1));
+
+            function triggerServe() {
+                if (state.isServing && state.status === 'playing') {
+                    state.isServing = false;
+                    const baseV = fH / 1.0;
+                    const lvx = (Math.random() - 0.5) * baseV * 0.5;
+                    const lvy = -baseV;
+                    const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
+                    ball.vx = lvx * wCos - lvy * wSin;
+                    ball.vy = lvx * wSin + lvy * wCos;
+                }
+            }
+
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+
+            function startDrag(clientX, clientY) {
+                if (state.status === 'win' || state.status === 'lose') {
+                    window.stopGame();
+                    return;
+                }
+                state.isDragging = true;
+                const rect = canvas.getBoundingClientRect();
+                lastMouseX = clientX - rect.left;
+                lastMouseY = clientY - rect.top;
+                triggerServe();
+            }
+
+            function doDrag(clientX, clientY) {
+                if (!state.isDragging || state.status !== 'playing') return;
+                const rect = canvas.getBoundingClientRect();
+                const mx = clientX - rect.left;
+                const my = clientY - rect.top;
+
+                const dx = (mx - lastMouseX) * (canvas.width / rect.width);
+                const dy = (my - lastMouseY) * (canvas.height / rect.height);
+
+                const cos = Math.cos(-state.fieldAngle);
+                const sin = Math.sin(-state.fieldAngle);
+                const localDx = dx * cos - dy * sin;
+                const localDy = dx * sin + dy * cos;
+
+                player.x += localDx;
+                player.x = Math.max(-fW / 2 + player.width / 2, Math.min(fW / 2 - player.width / 2, player.x));
+
+                if (state.freeMode) {
+                    player.y += localDy;
+                    player.y = Math.max(0, Math.min(fH / 2 - 10, player.y));
+                }
+
+                lastMouseX = mx;
+                lastMouseY = my;
+            }
+
+            canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+            window.addEventListener('mouseup', () => state.isDragging = false);
+            window.addEventListener('touchend', () => state.isDragging = false);
+            canvas.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
+            canvas.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+            canvas.addEventListener('touchmove', (e) => doDrag(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+
+            window.startGame = function () {
+                state.level = parseInt(document.getElementById('gameLevel').value);
+                state.npcLevel = parseInt(document.getElementById('npcLevel').value);
+                state.freeMode = document.getElementById('freeMode').checked;
+                state.aiMode = document.getElementById('aiMode').checked;
+                state.winPoints = parseInt(document.getElementById('winPoints').value);
+                state.winByTwo = document.getElementById('winByTwo').checked;
+                state.pScore = 0;
+                state.nScore = 0;
+                state.fieldAngle = 0;
+                state.status = 'playing';
+
+                setupUI.style.display = 'none';
+                gameUI.style.display = 'block';
+
+                updateScoreBoard();
+                resetRound(1);
+
+                state.lastTime = performance.now();
+                animationId = requestAnimationFrame(gameLoop);
+            };
+
+            window.stopGame = function () {
+                state.status = 'setup';
+                cancelAnimationFrame(animationId);
+                setupUI.style.display = 'block';
+                gameUI.style.display = 'none';
+            };
+
+            function resetRound(serveDir) {
+                state.isServing = true;
+                ball.vx = 0;
+                ball.vy = 0;
+                ball.spin = 0;
+                player.x = 0;
+                player.y = fH / 2 - 20;
+                player.angle = 0;
+                npc.x = 0;
+                npc.y = -fH / 2 + 20;
+                npc.angle = 0;
+                updatePaddleSizes();
+            }
+
+            function updatePaddleSizes() {
+                const diffP = state.nScore - state.pScore;
+                const diffN = state.pScore - state.nScore;
+                player.width = calculatePaddleWidth(diffP, state.pScore, state.nScore);
+                npc.width = calculatePaddleWidth(diffN, state.nScore, state.pScore);
+            }
+
+            function calculatePaddleWidth(behindPoints, myScore, enemyScore) {
+                let denom = 8 - Math.max(0, behindPoints);
+                if (denom < 2) denom = 2;
+                if (enemyScore >= state.winPoints - 1 && (enemyScore - myScore >= 2)) {
+                    denom = 2;
+                }
+                return fW / denom;
+            }
+
+            function recordAITendency(hitXNormalized) {
+                if (!state.aiMode) return;
+                const key = `lvl${state.level}`;
+                if (!aiData[key]) aiData[key] = { left: 0, center: 0, right: 0, total: 0 };
+
+                if (hitXNormalized < -0.3) aiData[key].left++;
+                else if (hitXNormalized > 0.3) aiData[key].right++;
+                else aiData[key].center++;
+
+                aiData[key].total++;
+                localStorage.setItem('cyberPongAIData', JSON.stringify(aiData));
+            }
+
+            function getAIPrediction() {
+                if (!state.aiMode) return 0;
+                const key = `lvl${state.level}`;
+                const data = aiData[key];
+                if (!data || data.total < 5) return 0;
+
+                const r = Math.random() * data.total;
+                if (r < data.left) return -1;
+                if (r < data.left + data.right) return 1;
+                return 0;
+            }
+
+            function gameLoop(time) {
+                if (state.status === 'setup') return;
+
+                let dt = (time - state.lastTime) / 1000;
+                state.lastTime = time;
+                if (dt > 0.1) dt = 0.1;
+                if (dt <= 0) dt = 0.001;
+
+                if (state.status === 'playing') {
+                    update(dt);
+                }
+
+                draw();
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            function update(dt) {
+                if (state.level === 4) {
+                    state.fieldAngle += (2 * Math.PI / 10) * dt;
+                } else if (state.level === 5) {
+                    state.fieldNextChange -= dt;
+                    if (state.fieldNextChange <= 0) {
+                        state.fieldNextChange = 2.0 + Math.random() * 2.0;
+                        const speed = (2 * Math.PI) / (5 + Math.random() * 5);
+                        state.fieldAngularVelocity = (Math.random() > 0.5 ? 1 : -1) * speed;
+                    }
+                    state.fieldAngle += state.fieldAngularVelocity * dt;
+                }
+
+                const pSpeed = (0.9 * fW) / 1.6;
+                let oldPx = player.x;
+
+                if (keys.left) player.x -= pSpeed * dt;
+                if (keys.right) player.x += pSpeed * dt;
+                player.x = Math.max(-fW / 2 + player.width / 2, Math.min(fW / 2 - player.width / 2, player.x));
+
+                let rawVx = (player.x - oldPx) / dt;
+                player.vx = Math.max(-1500, Math.min(1500, rawVx));
+
+                if (state.isServing) {
+                    const pLocalX = player.x;
+                    const pLocalY = player.y - 15;
+                    const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
+                    ball.x = pLocalX * wCos - pLocalY * wSin;
+                    ball.y = pLocalX * wSin + pLocalY * wCos;
+                    return;
+                }
+
+                const cos = Math.cos(-state.fieldAngle), sin = Math.sin(-state.fieldAngle);
+                const localBallX = ball.x * cos - ball.y * sin;
+                const localBallY = ball.x * sin + ball.y * cos;
+
+                npc.targetY = -fH / 2 + 20;
+
+                if (localBallY < 0 && ball.vy < 0) {
+                    const errorMargin = (10 - state.npcLevel) * 2;
+                    npc.targetX = localBallX + (Math.random() - 0.5) * errorMargin;
+
+                    if (state.npcLevel >= 3 && Math.random() < 0.1 * state.npcLevel) {
+                        if (player.x > 30) npc.targetAngle = Math.PI / 4;
+                        else if (player.x < -30) npc.targetAngle = -Math.PI / 4;
+                        else npc.targetAngle = 0;
+                    }
+
+                    if (state.freeMode) {
+                        npc.targetY = Math.min(-20, localBallY - 20);
+                    }
+                } else {
+                    const pred = getAIPrediction();
+                    npc.targetX = pred * (fW * 0.3);
+                    npc.targetAngle = 0;
+                }
+
+                npc.angle = npc.targetAngle;
+                const nSpeedMultiplier = 0.4 + state.npcLevel * 0.15;
+                const nSpeed = pSpeed * nSpeedMultiplier;
+
+                let oldNx = npc.x;
+                if (npc.x < npc.targetX - 5) npc.x += nSpeed * dt;
+                else if (npc.x > npc.targetX + 5) npc.x -= nSpeed * dt;
+                npc.x = Math.max(-fW / 2 + npc.width / 2, Math.min(fW / 2 - npc.width / 2, npc.x));
+                npc.vx = (npc.x - oldNx) / dt;
+
+                if (state.freeMode) {
+                    if (npc.y < npc.targetY - 5) npc.y += nSpeed * dt;
+                    else if (npc.y > npc.targetY + 5) npc.y -= nSpeed * dt;
+                    npc.y = Math.max(-fH / 2 + 10, Math.min(0, npc.y));
+                }
+
+                if (state.level >= 2 && Math.abs(ball.spin) > 0.1) {
+                    const vLen = Math.hypot(ball.vx, ball.vy);
+                    if (vLen > 0) {
+                        const nx = -ball.vy / vLen;
+                        const ny = ball.vx / vLen;
+                        const curveForce = ball.spin * 6.0;
+                        ball.vx += nx * curveForce * dt;
+                        ball.vy += ny * curveForce * dt;
+                        ball.spin *= 0.98;
+                    }
+                }
+
+                ball.x += ball.vx * dt;
+                ball.y += ball.vy * dt;
+
+                let lbX = ball.x * cos - ball.y * sin;
+                let lbY = ball.x * sin + ball.y * cos;
+                let lvx = ball.vx * cos - ball.vy * sin;
+                let lvy = ball.vx * sin + ball.vy * cos;
+
+                if (lbX < -fW / 2 + 5) { lbX = -fW / 2 + 5; lvx = Math.abs(lvx); }
+                if (lbX > fW / 2 - 5) { lbX = fW / 2 - 5; lvx = -Math.abs(lvx); }
+
+                const paddleYRadius = 10;
+
+                if (lbY > player.y - paddleYRadius && lbY < player.y + paddleYRadius) {
+                    const dx = lbX - player.x;
+                    const dy = lbY - player.y;
+                    const pCos = Math.cos(-player.angle), pSin = Math.sin(-player.angle);
+                    const pxLocal = dx * pCos - dy * pSin;
+
+                    if (Math.abs(pxLocal) <= player.width / 2) {
+                        const hitRatio = pxLocal / (player.width / 2);
+                        recordAITendency(hitRatio);
+
+                        const outAngleDeg = 90 - hitRatio * 60;
+                        const outAngleRad = outAngleDeg * Math.PI / 180;
+
+                        const totalAngle = outAngleRad + player.angle;
+                        const vBase = fH / 1.0;
+                        lvx = Math.cos(totalAngle) * vBase;
+                        lvy = -Math.sin(totalAngle) * vBase;
+                        ball.spin = player.vx * 1.5;
+                    }
+                }
+
+                if (lbY < npc.y + paddleYRadius && lbY > npc.y - paddleYRadius) {
+                    const dx = lbX - npc.x;
+                    const dy = lbY - npc.y;
+                    const nCos = Math.cos(-npc.angle), nSin = Math.sin(-npc.angle);
+                    const nxLocal = dx * nCos - dy * nSin;
+
+                    if (Math.abs(nxLocal) <= npc.width / 2) {
+                        const hitRatio = nxLocal / (npc.width / 2);
+                        const outAngleDeg = 90 + hitRatio * 60;
+                        const outAngleRad = outAngleDeg * Math.PI / 180;
+
+                        const totalAngle = outAngleRad + npc.angle;
+                        const vBase = fH / 1.0;
+                        lvx = Math.cos(totalAngle) * vBase;
+                        lvy = Math.sin(totalAngle) * vBase;
+                        ball.spin = (npc.vx || (Math.random() - 0.5) * 500) * 1.5;
+                    }
+                }
+
                 const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
                 ball.vx = lvx * wCos - lvy * wSin;
                 ball.vy = lvx * wSin + lvy * wCos;
-            }
-        }
 
-        let lastMouseX = 0;
-        let lastMouseY = 0;
-
-        function startDrag(clientX, clientY) {
-            if (state.status === 'win' || state.status === 'lose') {
-                window.stopGame();
-                return;
-            }
-            state.isDragging = true;
-            const rect = canvas.getBoundingClientRect();
-            lastMouseX = clientX - rect.left;
-            lastMouseY = clientY - rect.top;
-            triggerServe();
-        }
-
-        function doDrag(clientX, clientY) {
-            if (!state.isDragging || state.status !== 'playing') return;
-            const rect = canvas.getBoundingClientRect();
-            const mx = clientX - rect.left;
-            const my = clientY - rect.top;
-
-            const dx = (mx - lastMouseX) * (canvas.width / rect.width);
-            const dy = (my - lastMouseY) * (canvas.height / rect.height);
-
-            const cos = Math.cos(-state.fieldAngle);
-            const sin = Math.sin(-state.fieldAngle);
-            const localDx = dx * cos - dy * sin;
-            const localDy = dx * sin + dy * cos;
-
-            player.x += localDx;
-            player.x = Math.max(-fW/2 + player.width/2, Math.min(fW/2 - player.width/2, player.x));
-
-            if (state.freeMode) {
-                player.y += localDy;
-                player.y = Math.max(0, Math.min(fH/2 - 10, player.y));
-            }
-
-            lastMouseX = mx;
-            lastMouseY = my;
-        }
-
-        canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
-        window.addEventListener('mouseup', () => state.isDragging = false);
-        window.addEventListener('touchend', () => state.isDragging = false);
-        canvas.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
-        canvas.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
-        canvas.addEventListener('touchmove', (e) => doDrag(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
-
-        window.startGame = function() {
-            state.level = parseInt(document.getElementById('gameLevel').value);
-            state.npcLevel = parseInt(document.getElementById('npcLevel').value);
-            state.freeMode = document.getElementById('freeMode').checked;
-            state.aiMode = document.getElementById('aiMode').checked;
-            state.winPoints = parseInt(document.getElementById('winPoints').value);
-            state.winByTwo = document.getElementById('winByTwo').checked;
-            state.pScore = 0;
-            state.nScore = 0;
-            state.fieldAngle = 0;
-            state.status = 'playing';
-            
-            setupUI.style.display = 'none';
-            gameUI.style.display = 'block';
-            
-            updateScoreBoard();
-            resetRound(1); 
-
-            state.lastTime = performance.now();
-            animationId = requestAnimationFrame(gameLoop);
-        };
-
-        window.stopGame = function() {
-            state.status = 'setup';
-            cancelAnimationFrame(animationId);
-            setupUI.style.display = 'block';
-            gameUI.style.display = 'none';
-        };
-
-        function resetRound(serveDir) {
-            state.isServing = true;
-            ball.vx = 0;
-            ball.vy = 0;
-            ball.spin = 0;
-            player.x = 0;
-            player.y = fH/2 - 20; 
-            player.angle = 0;
-            npc.x = 0;
-            npc.y = -fH/2 + 20;
-            npc.angle = 0;
-            updatePaddleSizes();
-        }
-
-        function updatePaddleSizes() {
-            const diffP = state.nScore - state.pScore; 
-            const diffN = state.pScore - state.nScore;
-            player.width = calculatePaddleWidth(diffP, state.pScore, state.nScore);
-            npc.width = calculatePaddleWidth(diffN, state.nScore, state.pScore);
-        }
-
-        function calculatePaddleWidth(behindPoints, myScore, enemyScore) {
-            let denom = 8 - Math.max(0, behindPoints); 
-            if (denom < 2) denom = 2; 
-            if (enemyScore >= state.winPoints - 1 && (enemyScore - myScore >= 2)) {
-                denom = 2;
-            }
-            return fW / denom;
-        }
-
-        function recordAITendency(hitXNormalized) {
-            if (!state.aiMode) return;
-            const key = `lvl${state.level}`;
-            if (!aiData[key]) aiData[key] = { left: 0, center: 0, right: 0, total: 0 };
-            
-            if (hitXNormalized < -0.3) aiData[key].left++;
-            else if (hitXNormalized > 0.3) aiData[key].right++;
-            else aiData[key].center++;
-            
-            aiData[key].total++;
-            localStorage.setItem('cyberPongAIData', JSON.stringify(aiData));
-        }
-
-        function getAIPrediction() {
-            if (!state.aiMode) return 0; 
-            const key = `lvl${state.level}`;
-            const data = aiData[key];
-            if (!data || data.total < 5) return 0;
-
-            const r = Math.random() * data.total;
-            if (r < data.left) return -1; 
-            if (r < data.left + data.right) return 1; 
-            return 0; 
-        }
-
-        function gameLoop(time) {
-            if (state.status === 'setup') return;
-            
-            let dt = (time - state.lastTime) / 1000;
-            state.lastTime = time;
-            if (dt > 0.1) dt = 0.1; 
-            if (dt <= 0) dt = 0.001; 
-
-            if (state.status === 'playing') {
-                update(dt);
-            }
-            
-            draw();
-            animationId = requestAnimationFrame(gameLoop);
-        }
-
-        function update(dt) {
-            if (state.level === 4) {
-                state.fieldAngle += (2 * Math.PI / 10) * dt; 
-            } else if (state.level === 5) {
-                state.fieldNextChange -= dt;
-                if (state.fieldNextChange <= 0) {
-                    state.fieldNextChange = 2.0 + Math.random() * 2.0; 
-                    const speed = (2 * Math.PI) / (5 + Math.random() * 5); 
-                    state.fieldAngularVelocity = (Math.random() > 0.5 ? 1 : -1) * speed;
-                }
-                state.fieldAngle += state.fieldAngularVelocity * dt;
-            }
-
-            const pSpeed = (0.9 * fW) / 1.6; 
-            let oldPx = player.x;
-            
-            if (keys.left) player.x -= pSpeed * dt;
-            if (keys.right) player.x += pSpeed * dt;
-            player.x = Math.max(-fW/2 + player.width/2, Math.min(fW/2 - player.width/2, player.x));
-            
-            let rawVx = (player.x - oldPx) / dt;
-            player.vx = Math.max(-1500, Math.min(1500, rawVx)); 
-
-            if (state.isServing) {
-                const pLocalX = player.x;
-                const pLocalY = player.y - 15; 
-                const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
-                ball.x = pLocalX * wCos - pLocalY * wSin;
-                ball.y = pLocalX * wSin + pLocalY * wCos;
-                return; 
-            }
-
-            const cos = Math.cos(-state.fieldAngle), sin = Math.sin(-state.fieldAngle);
-            const localBallX = ball.x * cos - ball.y * sin;
-            const localBallY = ball.x * sin + ball.y * cos;
-
-            npc.targetY = -fH/2 + 20; 
-
-            if (localBallY < 0 && ball.vy < 0) {
-                const errorMargin = (10 - state.npcLevel) * 2; 
-                npc.targetX = localBallX + (Math.random() - 0.5) * errorMargin;
-                
-                if (state.npcLevel >= 3 && Math.random() < 0.1 * state.npcLevel) { 
-                    if (player.x > 30) npc.targetAngle = Math.PI / 4; 
-                    else if (player.x < -30) npc.targetAngle = -Math.PI / 4; 
-                    else npc.targetAngle = 0;
-                }
-
-                if (state.freeMode) {
-                    npc.targetY = Math.min(-20, localBallY - 20); 
-                }
-            } else {
-                const pred = getAIPrediction();
-                npc.targetX = pred * (fW * 0.3); 
-                npc.targetAngle = 0; 
-            }
-            
-            npc.angle = npc.targetAngle;
-            const nSpeedMultiplier = 0.4 + state.npcLevel * 0.15; 
-            const nSpeed = pSpeed * nSpeedMultiplier;
-            
-            let oldNx = npc.x;
-            if (npc.x < npc.targetX - 5) npc.x += nSpeed * dt;
-            else if (npc.x > npc.targetX + 5) npc.x -= nSpeed * dt;
-            npc.x = Math.max(-fW/2 + npc.width/2, Math.min(fW/2 - npc.width/2, npc.x));
-            npc.vx = (npc.x - oldNx) / dt;
-
-            if (state.freeMode) {
-                if (npc.y < npc.targetY - 5) npc.y += nSpeed * dt;
-                else if (npc.y > npc.targetY + 5) npc.y -= nSpeed * dt;
-                npc.y = Math.max(-fH/2 + 10, Math.min(0, npc.y)); 
-            }
-
-            if (state.level >= 2 && Math.abs(ball.spin) > 0.1) {
-                const vLen = Math.hypot(ball.vx, ball.vy);
-                if (vLen > 0) {
-                    const nx = -ball.vy / vLen;
-                    const ny = ball.vx / vLen;
-                    const curveForce = ball.spin * 6.0; 
-                    ball.vx += nx * curveForce * dt;
-                    ball.vy += ny * curveForce * dt;
-                    ball.spin *= 0.98; 
+                if (lbY > fH / 2) {
+                    state.nScore++;
+                    checkWin();
+                    if (state.status === 'playing') resetRound(1);
+                } else if (lbY < -fH / 2) {
+                    state.pScore++;
+                    checkWin();
+                    if (state.status === 'playing') resetRound(-1);
                 }
             }
 
-            ball.x += ball.vx * dt;
-            ball.y += ball.vy * dt;
+            function checkWin() {
+                updateScoreBoard();
+                let pWin = state.pScore >= state.winPoints;
+                let nWin = state.nScore >= state.winPoints;
 
-            let lbX = ball.x * cos - ball.y * sin;
-            let lbY = ball.x * sin + ball.y * cos;
-            let lvx = ball.vx * cos - ball.vy * sin;
-            let lvy = ball.vx * sin + ball.vy * cos;
+                if (state.winByTwo) {
+                    pWin = pWin && (state.pScore - state.nScore >= 2);
+                    nWin = nWin && (state.nScore - state.pScore >= 2);
+                }
 
-            if (lbX < -fW/2 + 5) { lbX = -fW/2 + 5; lvx = Math.abs(lvx); }
-            if (lbX > fW/2 - 5) { lbX = fW/2 - 5; lvx = -Math.abs(lvx); }
-
-            const paddleYRadius = 10;
-            
-            if (lbY > player.y - paddleYRadius && lbY < player.y + paddleYRadius) {
-                const dx = lbX - player.x;
-                const dy = lbY - player.y;
-                const pCos = Math.cos(-player.angle), pSin = Math.sin(-player.angle);
-                const pxLocal = dx * pCos - dy * pSin;
-                
-                if (Math.abs(pxLocal) <= player.width / 2) {
-                    const hitRatio = pxLocal / (player.width / 2); 
-                    recordAITendency(hitRatio); 
-
-                    const outAngleDeg = 90 - hitRatio * 60; 
-                    const outAngleRad = outAngleDeg * Math.PI / 180;
-                    
-                    const totalAngle = outAngleRad + player.angle;
-                    const vBase = fH / 1.0;
-                    lvx = Math.cos(totalAngle) * vBase;
-                    lvy = -Math.sin(totalAngle) * vBase; 
-                    ball.spin = player.vx * 1.5;
+                if (pWin) {
+                    state.status = 'win';
+                } else if (nWin) {
+                    state.status = 'lose';
                 }
             }
 
-            if (lbY < npc.y + paddleYRadius && lbY > npc.y - paddleYRadius) {
-                const dx = lbX - npc.x;
-                const dy = lbY - npc.y;
-                const nCos = Math.cos(-npc.angle), nSin = Math.sin(-npc.angle);
-                const nxLocal = dx * nCos - dy * nSin;
-
-                if (Math.abs(nxLocal) <= npc.width / 2) {
-                    const hitRatio = nxLocal / (npc.width / 2);
-                    const outAngleDeg = 90 + hitRatio * 60; 
-                    const outAngleRad = outAngleDeg * Math.PI / 180;
-                    
-                    const totalAngle = outAngleRad + npc.angle;
-                    const vBase = fH / 1.0;
-                    lvx = Math.cos(totalAngle) * vBase;
-                    lvy = Math.sin(totalAngle) * vBase; 
-                    ball.spin = (npc.vx || (Math.random()-0.5)*500) * 1.5; 
-                }
+            function updateScoreBoard() {
+                playerScoreEl.textContent = `YOU: ${state.pScore}`;
+                npcScoreEl.textContent = `NPC: ${state.nScore}`;
             }
 
-            const wCos = Math.cos(state.fieldAngle), wSin = Math.sin(state.fieldAngle);
-            ball.vx = lvx * wCos - lvy * wSin;
-            ball.vy = lvx * wSin + lvy * wCos;
-
-            if (lbY > fH/2) {
-                state.nScore++;
-                checkWin();
-                if(state.status === 'playing') resetRound(1);
-            } else if (lbY < -fH/2) {
-                state.pScore++;
-                checkWin();
-                if(state.status === 'playing') resetRound(-1);
-            }
-        }
-
-        function checkWin() {
-            updateScoreBoard();
-            let pWin = state.pScore >= state.winPoints;
-            let nWin = state.nScore >= state.winPoints;
-            
-            if (state.winByTwo) {
-                pWin = pWin && (state.pScore - state.nScore >= 2);
-                nWin = nWin && (state.nScore - state.pScore >= 2);
-            }
-
-            if (pWin) {
-                state.status = 'win';
-            } else if (nWin) {
-                state.status = 'lose';
-            }
-        }
-
-        function updateScoreBoard() {
-            playerScoreEl.textContent = `YOU: ${state.pScore}`;
-            npcScoreEl.textContent = `NPC: ${state.nScore}`;
-        }
-
-        function draw() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
-            ctx.fillRect(0, 0, W, H);
-
-            ctx.save();
-            ctx.translate(W/2, H/2);
-            
-            ctx.rotate(state.fieldAngle);
-            
-            ctx.strokeStyle = '#0f0';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(-fW/2, -fH/2, fW, fH);
-            
-            ctx.beginPath();
-            ctx.setLineDash([10, 10]);
-            ctx.moveTo(-fW/2, 0); ctx.lineTo(fW/2, 0);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            ctx.save();
-            ctx.translate(npc.x, npc.y);
-            ctx.rotate(npc.angle);
-            ctx.fillStyle = '#f00';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#f00';
-            ctx.fillRect(-npc.width/2, -10, npc.width, 20);
-            ctx.restore();
-
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.rotate(player.angle);
-            ctx.fillStyle = '#0ff';
-            ctx.shadowColor = '#0ff';
-            ctx.fillRect(-player.width/2, -10, player.width, 20);
-            ctx.restore();
-
-            if (state.isServing && state.status === 'playing') {
-                ctx.fillStyle = '#fff';
-                ctx.shadowColor = 'transparent';
-                ctx.font = 'bold 22px Courier New';
-                ctx.textAlign = 'center';
-                if (Math.floor(Date.now() / 400) % 2 === 0) {
-                    ctx.fillText("TAP TO SERVE", 0, 40);
-                }
-            }
-            ctx.restore();
-
-            if (state.status === 'playing' || state.isServing) {
-                ctx.save();
-                ctx.translate(W/2, H/2); 
-                ctx.beginPath();
-                ctx.arc(ball.x, ball.y, 7, 0, Math.PI * 2);
-                ctx.fillStyle = '#ff0';
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = '#ff0';
-                ctx.fill();
-                ctx.restore();
-            }
-
-            if (state.status === 'win' || state.status === 'lose') {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.fillRect(0, 0, W, H);
-                
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                if (state.status === 'win') {
-                    ctx.fillStyle = '#0f0';
-                    ctx.shadowColor = '#0f0';
+
+                ctx.save();
+                ctx.translate(W / 2, H / 2);
+
+                ctx.rotate(state.fieldAngle);
+
+                ctx.strokeStyle = '#0f0';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-fW / 2, -fH / 2, fW, fH);
+
+                ctx.beginPath();
+                ctx.setLineDash([10, 10]);
+                ctx.moveTo(-fW / 2, 0); ctx.lineTo(fW / 2, 0);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.save();
+                ctx.translate(npc.x, npc.y);
+                ctx.rotate(npc.angle);
+                ctx.fillStyle = '#f00';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#f00';
+                ctx.fillRect(-npc.width / 2, -10, npc.width, 20);
+                ctx.restore();
+
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                ctx.rotate(player.angle);
+                ctx.fillStyle = '#0ff';
+                ctx.shadowColor = '#0ff';
+                ctx.fillRect(-player.width / 2, -10, player.width, 20);
+                ctx.restore();
+
+                if (state.isServing && state.status === 'playing') {
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowColor = 'transparent';
+                    ctx.font = 'bold 22px Courier New';
+                    ctx.textAlign = 'center';
+                    if (Math.floor(Date.now() / 400) % 2 === 0) {
+                        ctx.fillText("TAP TO SERVE", 0, 40);
+                    }
+                }
+                ctx.restore();
+
+                if (state.status === 'playing' || state.isServing) {
+                    ctx.save();
+                    ctx.translate(W / 2, H / 2);
+                    ctx.beginPath();
+                    ctx.arc(ball.x, ball.y, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff0';
                     ctx.shadowBlur = 20;
-                    ctx.font = 'bold 36px Courier New';
-                    ctx.fillText("✨ YOU WIN! ✨", W/2, H/2 - 20);
-                } else {
-                    ctx.fillStyle = '#f00';
-                    ctx.shadowColor = '#f00';
-                    ctx.shadowBlur = 20;
-                    ctx.font = 'bold 36px Courier New';
-                    ctx.fillText("💀 GAME OVER", W/2, H/2 - 20);
+                    ctx.shadowColor = '#ff0';
+                    ctx.fill();
+                    ctx.restore();
                 }
 
-                ctx.fillStyle = '#fff';
-                ctx.shadowColor = 'transparent';
-                ctx.font = '16px Courier New';
-                if (Math.floor(Date.now() / 500) % 2 === 0) {
-                    ctx.fillText("- TAP TO RETURN -", W/2, H/2 + 40);
+                if (state.status === 'win' || state.status === 'lose') {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    ctx.fillRect(0, 0, W, H);
+
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    if (state.status === 'win') {
+                        ctx.fillStyle = '#0f0';
+                        ctx.shadowColor = '#0f0';
+                        ctx.shadowBlur = 20;
+                        ctx.font = 'bold 36px Courier New';
+                        ctx.fillText("✨ YOU WIN! ✨", W / 2, H / 2 - 20);
+                    } else {
+                        ctx.fillStyle = '#f00';
+                        ctx.shadowColor = '#f00';
+                        ctx.shadowBlur = 20;
+                        ctx.font = 'bold 36px Courier New';
+                        ctx.fillText("💀 GAME OVER", W / 2, H / 2 - 20);
+                    }
+
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowColor = 'transparent';
+                    ctx.font = '16px Courier New';
+                    if (Math.floor(Date.now() / 500) % 2 === 0) {
+                        ctx.fillText("- TAP TO RETURN -", W / 2, H / 2 + 40);
+                    }
                 }
             }
+        } catch (e) {
+            // エラー発生時は画面に出力する
+            const errorDiv = document.getElementById('errorOutput');
+            if (errorDiv) {
+                errorDiv.textContent = `SYSTEM ERROR: ${e.message}`;
+            }
+            console.error(e);
         }
-    } catch (e) {
-        // エラー発生時は画面に出力する
-        const errorDiv = document.getElementById('errorOutput');
-        if (errorDiv) {
-            errorDiv.textContent = `SYSTEM ERROR: ${e.message}`;
-        }
-        console.error(e);
-    }
-})();
+    })();
 </script>

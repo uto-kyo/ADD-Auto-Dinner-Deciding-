@@ -1,0 +1,563 @@
+<style>
+    /* 時間割ツール専用のスタイル */
+    .timetable-wrapper {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f9fafc;
+        color: #333;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        max-width: 900px;
+        width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .top-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .btn-tool {
+        background-color: #4A90E2;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .btn-tool:hover {
+        background-color: #357ABD;
+    }
+
+    .btn-tool.secondary {
+        background-color: #F5A623;
+    }
+
+    .btn-tool.secondary:hover {
+        background-color: #E09612;
+    }
+
+    /* 時間割表のスタイル */
+    .timetable-grid {
+        display: grid;
+        grid-template-columns: 40px repeat(5, 1fr);
+        gap: 2px;
+        background-color: #ddd;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .tt-header,
+    .tt-cell,
+    .tt-time {
+        background-color: #fff;
+        padding: 5px;
+        text-align: center;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .tt-header {
+        min-height: auto;
+        background-color: #eef2f5;
+        font-weight: bold;
+        padding: 10px 5px;
+    }
+
+    .tt-time {
+        min-height: auto;
+        background-color: #eef2f5;
+        font-weight: bold;
+        justify-content: center;
+    }
+
+    /* 科目バッジ */
+    .subject-badge {
+        font-size: 0.8rem;
+        padding: 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        word-break: break-all;
+    }
+
+    .subject-badge.fixed {
+        background-color: #4A90E2;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .subject-badge.required {
+        background-color: #E74C3C;
+        color: white;
+        /* 必修は赤系 */
+    }
+
+    .subject-badge.candidate {
+        background-color: #fff;
+        color: #4A90E2;
+        border-color: #4A90E2;
+        border-style: dashed;
+    }
+
+    .subject-badge.candidate:hover {
+        background-color: #e6f0fa;
+    }
+
+    /* 下部リスト */
+    .lists-container {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    .list-box {
+        flex: 1;
+        min-width: 250px;
+        background: #fff;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .list-box h3 {
+        margin-top: 0;
+        font-size: 1.1rem;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 5px;
+    }
+
+    .list-item {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #f5f5f5;
+        padding-bottom: 4px;
+    }
+
+    .cat-name {
+        font-weight: bold;
+        color: #555;
+    }
+
+    .sub-name {
+        color: #4A90E2;
+    }
+
+    .sub-reason {
+        color: #E74C3C;
+        font-size: 0.8rem;
+    }
+
+    /* モーダル */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    .modal-content h2 {
+        margin-top: 0;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+</style>
+
+<div class="timetable-wrapper">
+    <h2 style="margin-top:0; color:#2c3e50;">留年回避 時間割マネージャー</h2>
+
+    <div class="top-controls">
+        <button class="btn-tool" onclick="openModal('addSubjectModal')">＋ 履修候補を追加</button>
+        <button class="btn-tool secondary" onclick="openModal('statusModal')">⚙️ 現在の単位状況・要件設定</button>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+        <h3 style="margin:0;">時間割シミューレーター</h3>
+        <select id="termSelector" onchange="render()" style="padding:5px; border-radius:4px;">
+            <option value="前期">前期 (1Q/2Q含む)</option>
+            <option value="後期">後期 (3Q/4Q含む)</option>
+        </select>
+    </div>
+
+    <div class="timetable-grid" id="ttGrid">
+    </div>
+
+    <div class="lists-container">
+        <div class="list-box">
+            <h3>✅ 選択可能 (要件不足分)</h3>
+            <div id="availableList"></div>
+        </div>
+        <div class="list-box" style="background-color:#fffcfc;">
+            <h3>🚫 選択不可能</h3>
+            <div id="unavailableList"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="statusModal">
+    <div class="modal-content">
+        <h2>現在の単位状況・要件</h2>
+        <div class="form-group">
+            <label>現在の学年（目標自動判定）</label>
+            <select id="gradeSelect" onchange="render()">
+                <option value="1">1年 (目標: 卒研着手)</option>
+                <option value="2">2年 (目標: 卒研着手)</option>
+                <option value="3" selected>3年 (目標: 卒業)</option>
+                <option value="4">4年 (目標: 卒業)</option>
+            </select>
+        </div>
+        <p style="font-size:0.8rem; color:#666;">※子区分の要件を満たした上で余った単位は、自動で親区分(《合計》)の計算に充当されます。</p>
+        <div id="categoryInputs">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn-tool" onclick="saveStatus(); closeModal('statusModal')">保存して反映</button>
+            <button class="btn-tool" style="background:#999;" onclick="closeModal('statusModal')">キャンセル</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="addSubjectModal">
+    <div class="modal-content">
+        <h2>履修候補を追加</h2>
+        <div class="form-group"><label>科目名</label><input type="text" id="subName"></div>
+        <div class="form-group"><label>単位数</label><input type="number" id="subCredits" value="2"></div>
+        <div class="form-group" style="display:flex; gap:10px; align-items:center;">
+            <input type="checkbox" id="subIsQ" onchange="toggleQ()"><label style="margin:0;">クオーター制</label>
+        </div>
+        <div class="form-group">
+            <label>時期</label>
+            <select id="subTerm">
+                <option value="前期">前期</option>
+                <option value="後期">後期</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1;">
+                <label>曜日</label>
+                <select id="subDay">
+                    <option value="1">月曜</option>
+                    <option value="2">火曜</option>
+                    <option value="3">水曜</option>
+                    <option value="4">木曜</option>
+                    <option value="5">金曜</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label>時限</label>
+                <select id="subPeriod">
+                    <option value="1">1限</option>
+                    <option value="2">2限</option>
+                    <option value="3">3限</option>
+                    <option value="4">4限</option>
+                    <option value="5">5限</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>履修区分</label>
+            <select id="subCategory">
+            </select>
+        </div>
+        <div class="form-group" style="display:flex; gap:10px; align-items:center;">
+            <input type="checkbox" id="subIsReq"><label style="margin:0; color:#E74C3C;">必修 (自動的に時間割に固定されます)</label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn-tool" onclick="addSubject()">追加</button>
+            <button class="btn-tool" style="background:#999;" onclick="closeModal('addSubjectModal')">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 即時関数でカプセル化（SPAの変数衝突防止）
+    (function () {
+        // --- データ定義 (階層構造) ---
+        // parent が null でないものは、親区分の合計計算に合算される
+        let categories = [
+            { id: 'all', name: '《総合計》', parent: null, current: 0, reqRes: 100, reqGrad: 124, depth: 0 },
+            { id: 'com', name: '全学共通《合計》', parent: 'all', current: 0, reqRes: 20, reqGrad: 24, depth: 1 },
+            { id: 'com_eng', name: '全学共通 英語必修', parent: 'com', current: 0, reqRes: 4, reqGrad: 4, depth: 2 },
+            { id: 'com_base', name: '全学共通 基盤教養', parent: 'com', current: 0, reqRes: 6, reqGrad: 8, depth: 2 },
+            { id: 'pro', name: '専門教育《合計》', parent: 'all', current: 0, reqRes: 40, reqGrad: 60, depth: 1 },
+            { id: 'pro_base', name: '専門基礎《合計》', parent: 'pro', current: 0, reqRes: 20, reqGrad: 24, depth: 2 },
+            { id: 'pro_b_req', name: '専門基礎 必修', parent: 'pro_base', current: 0, reqRes: 10, reqGrad: 10, depth: 3 },
+            { id: 'pro_b_sel', name: '専門基礎 選択', parent: 'pro_base', current: 0, reqRes: 4, reqGrad: 6, depth: 3 },
+            { id: 'pro_adv', name: '課程専門《合計》', parent: 'pro', current: 0, reqRes: 20, reqGrad: 30, depth: 2 },
+            { id: 'pro_a_req', name: '課程専門 必修', parent: 'pro_adv', current: 0, reqRes: 10, reqGrad: 12, depth: 3 },
+            { id: 'pro_a_sel', name: '課程専門 選択', parent: 'pro_adv', current: 0, reqRes: 4, reqGrad: 10, depth: 3 }
+        ];
+
+        let subjects = [
+            // サンプルデータ
+            { id: 1, name: '力学', credits: 2, term: '前期', day: 1, period: 2, catId: 'pro_b_req', isReq: true, isFixed: true },
+            { id: 2, name: '物理学', credits: 2, term: '前期', day: 1, period: 2, catId: 'pro_b_sel', isReq: false, isFixed: false },
+            { id: 3, name: '英語リーディング', credits: 2, term: '前期', day: 2, period: 1, catId: 'com_eng', isReq: true, isFixed: true },
+            { id: 4, name: '統計力学', credits: 2, term: '後期', day: 3, period: 3, catId: 'pro_a_sel', isReq: false, isFixed: false }
+        ];
+
+        const days = ['月', '火', '水', '木', '金'];
+
+        // グローバルに関数を公開
+        window.openModal = id => document.getElementById(id).style.display = 'flex';
+        window.closeModal = id => document.getElementById(id).style.display = 'none';
+
+        window.toggleQ = function () {
+            const isQ = document.getElementById('subIsQ').checked;
+            const sel = document.getElementById('subTerm');
+            sel.innerHTML = isQ
+                ? '<option value="前期">1Q (前期)</option><option value="前期">2Q (前期)</option><option value="後期">3Q (後期)</option><option value="後期">4Q (後期)</option>'
+                : '<option value="前期">前期</option><option value="後期">後期</option>';
+        }
+
+        // 初期化
+        function init() {
+            // カテゴリのセレクトボックス生成
+            const catSel = document.getElementById('subCategory');
+            categories.forEach(c => {
+                const prefix = '　'.repeat(c.depth);
+                catSel.innerHTML += `<option value="${c.id}">${prefix}${c.name}</option>`;
+            });
+
+            // 状況入力テーブルの生成
+            const catInputs = document.getElementById('categoryInputs');
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">';
+            html += '<tr style="border-bottom:1px solid #ccc;"><th>区分名</th><th>取得済</th><th>要件(卒研)</th><th>要件(卒業)</th></tr>';
+            categories.forEach(c => {
+                const prefix = 'ー'.repeat(c.depth);
+                const isTotal = c.name.includes('合計');
+                const bg = isTotal ? '#f0f8ff' : '#fff';
+                html += `<tr style="border-bottom:1px solid #eee; background:${bg};">
+                <td>${prefix}${c.name}</td>
+                <td><input type="number" id="cur_${c.id}" value="${c.current}" style="width:50px;" ${isTotal ? '' : 'required'}></td>
+                <td><input type="number" id="res_${c.id}" value="${c.reqRes}" style="width:50px;"></td>
+                <td><input type="number" id="grd_${c.id}" value="${c.reqGrad}" style="width:50px;"></td>
+            </tr>`;
+            });
+            html += '</table>';
+            catInputs.innerHTML = html;
+
+            window.render();
+        }
+
+        window.saveStatus = function () {
+            categories.forEach(c => {
+                c.current = parseInt(document.getElementById(`cur_${c.id}`).value) || 0;
+                c.reqRes = parseInt(document.getElementById(`res_${c.id}`).value) || 0;
+                c.reqGrad = parseInt(document.getElementById(`grd_${c.id}`).value) || 0;
+            });
+            window.render();
+        }
+
+        window.addSubject = function () {
+            const name = document.getElementById('subName').value;
+            if (!name) return alert("科目名を入力してください");
+
+            subjects.push({
+                id: Date.now(),
+                name: name,
+                credits: parseInt(document.getElementById('subCredits').value),
+                term: document.getElementById('subTerm').value,
+                day: parseInt(document.getElementById('subDay').value),
+                period: parseInt(document.getElementById('subPeriod').value),
+                catId: document.getElementById('subCategory').value,
+                isReq: document.getElementById('subIsReq').checked,
+                isFixed: document.getElementById('subIsReq').checked // 必修なら自動で固定
+            });
+
+            document.getElementById('subName').value = "";
+            closeModal('addSubjectModal');
+            window.render();
+        }
+
+        window.toggleSubject = function (id) {
+            const sub = subjects.find(s => s.id === id);
+            if (sub && !sub.isReq) { // 必修は解除不可
+                sub.isFixed = !sub.isFixed;
+                window.render();
+            }
+        }
+
+        // 階層を考慮した単位計算
+        function calculateCredits() {
+            const grade = parseInt(document.getElementById('gradeSelect').value);
+            const isGrad = grade >= 3; // 3年以上なら卒業要件を見る
+
+            // 1. まず各区分の「現在値」＋「時間割で確定した値」を計算用オブジェクトにセット
+            let calc = {};
+            categories.forEach(c => {
+                calc[c.id] = {
+                    name: c.name,
+                    parent: c.parent,
+                    target: isGrad ? c.reqGrad : c.reqRes,
+                    earned: c.current
+                };
+            });
+
+            // 確定科目の加算
+            subjects.forEach(s => {
+                if (s.isFixed && calc[s.catId]) {
+                    calc[s.catId].earned += s.credits;
+                }
+            });
+
+            // 2. ボトムアップで「親区分への繰り越し」を計算
+            // 深い階層から順に処理する
+            const maxDepth = Math.max(...categories.map(c => c.depth));
+            for (let d = maxDepth; d > 0; d--) {
+                categories.filter(c => c.depth === d).forEach(c => {
+                    const node = calc[c.id];
+                    const pNode = calc[c.parent];
+
+                    // 自身の目標を達成して余った分を親に合算（※親自体の直接取得分＋子の余り）
+                    if (pNode) {
+                        // 親が要求する単位の足しに、子の「獲得総数」または「要件上限」を足すか？
+                        // 一般的な大学：小区分をいくら取っても、親の要求を満たすための合算に組み込まれる。
+                        pNode.earned += node.earned;
+                    }
+                });
+            }
+            return calc;
+        }
+
+        window.render = function () {
+            const term = document.getElementById('termSelector').value;
+            const calcData = calculateCredits();
+
+            // 1. 時間割の描画
+            const ttGrid = document.getElementById('ttGrid');
+            let ttHtml = '<div class="tt-time"></div>';
+            days.forEach(d => ttHtml += `<div class="tt-header">${d}</div>`);
+
+            for (let p = 1; p <= 5; p++) {
+                ttHtml += `<div class="tt-time">${p}限</div>`;
+                for (let d = 1; d <= 5; d++) {
+                    // 該当学期、曜日、時限の科目を抽出
+                    const cellSubs = subjects.filter(s => s.term === term && s.day === d && s.period === p);
+
+                    let cellHtml = `<div class="tt-cell">`;
+                    const fixedSub = cellSubs.find(s => s.isFixed);
+
+                    cellSubs.forEach(s => {
+                        let btnClass = "subject-badge candidate";
+                        if (s.isFixed) btnClass = s.isReq ? "subject-badge required" : "subject-badge fixed";
+                        // 他の科目が固定されている場合は非表示か薄くする
+                        if (fixedSub && !s.isFixed) {
+                            cellHtml += `<div class="subject-badge" style="background:#eee; color:#aaa; text-decoration:line-through;">${s.name}</div>`;
+                        } else {
+                            cellHtml += `<div class="${btnClass}" onclick="toggleSubject(${s.id})">${s.name}<br>(${s.credits}単)</div>`;
+                        }
+                    });
+                    cellHtml += `</div>`;
+                    ttHtml += cellHtml;
+                }
+            }
+            ttGrid.innerHTML = ttHtml;
+
+            // 2. 下部リストの描画
+            const availList = document.getElementById('availableList');
+            const unavailList = document.getElementById('unavailableList');
+
+            let availHtml = "";
+            let unavailHtml = "";
+
+            // 確定していない科目を評価
+            const candidates = subjects.filter(s => !s.isFixed);
+
+            // 区分ごとにグループ化して表示
+            categories.forEach(c => {
+                const catCands = candidates.filter(s => s.catId === c.id);
+                if (catCands.length === 0) return;
+
+                const cData = calcData[c.id];
+                const lack = cData.target - cData.earned;
+
+                // 親が不足しているかどうかもチェック
+                let isParentLack = false;
+                let curr = c;
+                while (curr.parent) {
+                    const pData = calcData[curr.parent];
+                    if (pData.target - pData.earned > 0) isParentLack = true;
+                    curr = categories.find(cat => cat.id === curr.parent);
+                }
+
+                // 自身が不足している、または親が不足しているなら「選択可能」
+                if (lack > 0 || isParentLack) {
+                    let text = `<div class="list-item"><span class="cat-name">【${c.name}】</span> 残り必要: <span style="color:#E74C3C; font-weight:bold;">${lack > 0 ? lack : '親区分補填'}</span> 単位<br>`;
+                    catCands.forEach(s => {
+                        // 時間被りチェック
+                        const isConflict = subjects.some(fs => fs.isFixed && fs.term === s.term && fs.day === s.day && fs.period === s.period);
+                        if (isConflict) {
+                            unavailHtml += `<div class="list-item"><span class="sub-name">${s.name} (${s.credits})</span> <span class="sub-reason">※時間割被り（${s.term} ${days[s.day - 1]}曜${s.period}限）</span></div>`;
+                        } else {
+                            text += ` <span class="sub-name" style="cursor:pointer; text-decoration:underline;" onclick="document.getElementById('termSelector').value='${s.term}'; window.render();">・${s.name} (${s.credits}単)</span>`;
+                        }
+                    });
+                    text += `</div>`;
+                    availHtml += text;
+                } else {
+                    // 完全に要件を満たしている
+                    catCands.forEach(s => {
+                        unavailHtml += `<div class="list-item"><span class="sub-name">${s.name} (${s.credits})</span> <span class="sub-reason">※区分「${c.name}」および親区分の要件達成済み</span></div>`;
+                    });
+                }
+            });
+
+            availList.innerHTML = availHtml || '<p style="color:#888;">現在不足している要件に対する候補科目はありません。</p>';
+            unavailList.innerHTML = unavailHtml || '<p style="color:#888;">選択不可能な科目はありません。</p>';
+        }
+
+        // 初回実行
+        setTimeout(init, 100);
+
+    })();
+</script>

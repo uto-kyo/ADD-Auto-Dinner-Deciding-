@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. localStorageから前回の選択を取得（なければデフォルトをdinner_rouletteに）
     const lastSelectedFeature = localStorage.getItem('selectedFeature') || 'dinner_roulette';
-    
+
     // セレクトボックスの初期値を設定
     selector.value = lastSelectedFeature;
 
@@ -14,12 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // featuresフォルダ内の対応するHTMLファイルをフェッチ
             const response = await fetch(`features/${featureName}.html`);
             if (!response.ok) throw new Error('ファイルの読み込みに失敗しました');
-            
+
             const html = await response.text();
-            
+
             // コンテナにHTMLを流し込む
             container.innerHTML = html;
-            
+
             // ★追加処理：innerHTMLで挿入した<script>は自動実行されないため、手動で再生成して実行する
             const scripts = container.querySelectorAll('script');
             scripts.forEach(oldScript => {
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 状態をlocalStorageに保存
             localStorage.setItem('selectedFeature', featureName);
-            
+
         } catch (error) {
             console.error(error);
             container.innerHTML = '<div class="app-container"><p>エラーが発生しました。ローカルサーバー環境で実行しているか確認してください。</p></div>';

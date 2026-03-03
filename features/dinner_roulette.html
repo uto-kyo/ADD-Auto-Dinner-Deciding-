@@ -12,7 +12,7 @@
             <label style="margin-bottom: 5px;">冷蔵庫の余り物（カンマ区切り）</label>
             <input type="text" id="leftovers" class="filter-input" placeholder="例: キャベツ, 厚揚げ, 豚肉">
         </div>
-        
+
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc;">
             <label style="color: #d32f2f;">
                 <input type="checkbox" id="limitBreak" onchange="checkLimitBreak()">
@@ -30,26 +30,26 @@
 </div>
 
 <script>
-(function() {
-    // --- 季節の自動判定 ---
-    const month = new Date().getMonth() + 1;
-    let currentSeason = "";
-    let seasonLabel = "";
-    let currentSeasonJp = ""; 
+    (function () {
+        // --- 季節の自動判定 ---
+        const month = new Date().getMonth() + 1;
+        let currentSeason = "";
+        let seasonLabel = "";
+        let currentSeasonJp = "";
 
-    if (month >= 3 && month <= 5) {
-        currentSeason = "spring"; seasonLabel = "🌸 春のメニュー"; currentSeasonJp = "春";
-    } else if (month >= 6 && month <= 8) {
-        currentSeason = "summer"; seasonLabel = "🌻 夏のメニュー"; currentSeasonJp = "夏";
-    } else if (month >= 9 && month <= 11) {
-        currentSeason = "autumn"; seasonLabel = "🍁 秋のメニュー"; currentSeasonJp = "秋";
-    } else {
-        currentSeason = "winter"; seasonLabel = "⛄️ 冬のメニュー"; currentSeasonJp = "冬";
-    }
-    document.getElementById("seasonDisplay").textContent = seasonLabel;
+        if (month >= 3 && month <= 5) {
+            currentSeason = "spring"; seasonLabel = "🌸 春のメニュー"; currentSeasonJp = "春";
+        } else if (month >= 6 && month <= 8) {
+            currentSeason = "summer"; seasonLabel = "🌻 夏のメニュー"; currentSeasonJp = "夏";
+        } else if (month >= 9 && month <= 11) {
+            currentSeason = "autumn"; seasonLabel = "🍁 秋のメニュー"; currentSeasonJp = "秋";
+        } else {
+            currentSeason = "winter"; seasonLabel = "⛄️ 冬のメニュー"; currentSeasonJp = "冬";
+        }
+        document.getElementById("seasonDisplay").textContent = seasonLabel;
 
-    // --- 新しい主菜データ (省略せずにそのまま使用) ---
-    const rawMainData = `カテゴリー,料理名,アレンジ内容
+        // --- 新しい主菜データ (省略せずにそのまま使用) ---
+        const rawMainData = `カテゴリー,料理名,アレンジ内容
 通年,牛丼,玉ねぎと牛肉の定番煮込み
 通年,親子丼,鶏もも肉とふんわり卵の定番
 通年,とんかつ,サクサク豚ロースカツ
@@ -201,47 +201,47 @@
 冬,雪見鍋風湯豆腐,大根おろしをのせた雪見鍋風湯豆腐
 冬,里芋イカ筑前煮,里芋とイカのねっとり筑前煮`;
 
-    function getMainProperties(text) {
-        if (/(魚|鮭|鯖|鰯|鯵|鯛|さわら|スズキ|マグロ|ムニエル|アクアパッツァ|エビ|あさり|牡蠣|鱈|イカ)/.test(text)) {
-            return { category: "fish", nutrition: "low" };
-        } else if (/(パスタ|ご飯|丼|ライス|チャーハン|焼きそば|カレー|うどん|そば|ビビンバ|リゾット)/.test(text)) {
-            return { category: "carb", nutrition: "high" };
-        } else if (/(豆腐|厚揚げ|がんも|サラダ|お浸し|白和え|きんぴら|ナムル|ラタトゥイユ|おから|筑前煮)/.test(text)) {
-            return { category: "veg", nutrition: "normal" };
-        } else {
-            return { category: "meat", nutrition: "high" }; 
+        function getMainProperties(text) {
+            if (/(魚|鮭|鯖|鰯|鯵|鯛|さわら|スズキ|マグロ|ムニエル|アクアパッツァ|エビ|あさり|牡蠣|鱈|イカ)/.test(text)) {
+                return { category: "fish", nutrition: "low" };
+            } else if (/(パスタ|ご飯|丼|ライス|チャーハン|焼きそば|カレー|うどん|そば|ビビンバ|リゾット)/.test(text)) {
+                return { category: "carb", nutrition: "high" };
+            } else if (/(豆腐|厚揚げ|がんも|サラダ|お浸し|白和え|きんぴら|ナムル|ラタトゥイユ|おから|筑前煮)/.test(text)) {
+                return { category: "veg", nutrition: "normal" };
+            } else {
+                return { category: "meat", nutrition: "high" };
+            }
         }
-    }
 
-    const allMainDishes = [];
-    rawMainData.trim().split('\n').forEach(line => {
-        const parts = line.split(',');
-        if(parts.length < 3 || parts[0] === "カテゴリー") return;
-        
-        const seasonCat = parts[0];
-        const name = parts[1];
-        const arrange = parts[2];
-        const props = getMainProperties(name + arrange);
+        const allMainDishes = [];
+        rawMainData.trim().split('\n').forEach(line => {
+            const parts = line.split(',');
+            if (parts.length < 3 || parts[0] === "カテゴリー") return;
 
-        // 食材抽出の精度を上げるため、不要な修飾語を正規表現で除外してから分割する
-        const cleanArrange = arrange.replace(/[と・の（）入り多め風炒め煮込み定番基本サクサクふんわりジューシーたっぷりピリ辛本格甘み活かしたソースだれダレヘルシー香り贅沢満喫優しいシャキシャキ出汁苦味旨味丸ごと甘じょっぱい大人なねっとり美味しい染み染み添え仕立て控えめ]/g, ' ');
-        const ingredientKeywords = cleanArrange.split(/\s+/).filter(w => w.length > 1);
-        const ingredients = [name, ...ingredientKeywords];
+            const seasonCat = parts[0];
+            const name = parts[1];
+            const arrange = parts[2];
+            const props = getMainProperties(name + arrange);
 
-        allMainDishes.push({
-            season: seasonCat,
-            name: `${name}（${arrange}）`,
-            category: props.category,
-            nutrition: props.nutrition,
-            ingredients: Array.from(new Set(ingredients)) // 重複削除
+            // 食材抽出の精度を上げるため、不要な修飾語を正規表現で除外してから分割する
+            const cleanArrange = arrange.replace(/[と・の（）入り多め風炒め煮込み定番基本サクサクふんわりジューシーたっぷりピリ辛本格甘み活かしたソースだれダレヘルシー香り贅沢満喫優しいシャキシャキ出汁苦味旨味丸ごと甘じょっぱい大人なねっとり美味しい染み染み添え仕立て控えめ]/g, ' ');
+            const ingredientKeywords = cleanArrange.split(/\s+/).filter(w => w.length > 1);
+            const ingredients = [name, ...ingredientKeywords];
+
+            allMainDishes.push({
+                season: seasonCat,
+                name: `${name}（${arrange}）`,
+                category: props.category,
+                nutrition: props.nutrition,
+                ingredients: Array.from(new Set(ingredients)) // 重複削除
+            });
         });
-    });
 
-    // --- 副菜データ (前回の110種を使用。長いため省略せずに読み込む想定ですが、コード行数削減のためここではfetch化や変数化をそのまま想定) ---
-    // ※今回は主菜・限界突破の処理にフォーカスするため、前回の副菜ロジックは生きています。
-    // (ここに前回の allSideDishes パースロジックが入ります)
-    // ----------------------------------------------------
-    const rawSideData = `通年,ポテトサラダ,["carb","heavy"],["じゃがいも","マヨネーズ","きゅうり"]
+        // --- 副菜データ (前回の110種を使用。長いため省略せずに読み込む想定ですが、コード行数削減のためここではfetch化や変数化をそのまま想定) ---
+        // ※今回は主菜・限界突破の処理にフォーカスするため、前回の副菜ロジックは生きています。
+        // (ここに前回の allSideDishes パースロジックが入ります)
+        // ----------------------------------------------------
+        const rawSideData = `通年,ポテトサラダ,["carb","heavy"],["じゃがいも","マヨネーズ","きゅうり"]
 通年,冷奴,["protein","refreshing","low_cal"],["豆腐","ねぎ","生姜"]
 通年,ひじきの煮物,["veg","fiber"],["ひじき","にんじん","油揚げ"]
 通年,春雨サラダ,["refreshing"],["春雨","きゅうり","ハム"]
@@ -249,119 +249,119 @@
 秋,カボチャの煮付け,["heavy","veg"],["かぼちゃ"]
 冬,ほうれん草の胡麻和え,["veg","refreshing"],["ほうれん草","ごま"]`; // 省略（実際には110種全データ）
 
-    const allSideDishes = [];
-    rawSideData.trim().split('\n').forEach(line => {
-        const match = line.match(/^([^,]+),([^,]+),(\[.*?\]),(\[.*?\])$/);
-        if (match) {
-            allSideDishes.push({
-                category: match[1],
-                name: match[2],
-                tags: JSON.parse(match[3]),
-                ingredients: JSON.parse(match[4])
-            });
-        }
-    });
-    // ----------------------------------------------------
-
-    function getRandomItem(array) {
-        return array[Math.floor(Math.random() * array.length)];
-    }
-
-    function getRecipeLink(dishName) {
-        const cleanName = dishName.replace(/（.*?）/g, '').trim();
-        return `https://cookpad.com/search/${encodeURIComponent(cleanName)}`;
-    }
-
-    let recentSideDishes = [];
-    function getBalancedSideDish(mainDish) {
-        const availableSidesBySeason = allSideDishes.filter(side => side.category === "通年" || side.category === currentSeasonJp);
-        let filteredSides = availableSidesBySeason;
-        
-        if (mainDish.category === "meat" || mainDish.nutrition === "high" || mainDish.category === "carb") {
-            filteredSides = availableSidesBySeason.filter(side => side.tags.includes("refreshing") || side.tags.includes("veg") || side.tags.includes("low_cal") || side.tags.includes("soup"));
-        } else {
-            filteredSides = availableSidesBySeason.filter(side => !side.tags.includes("heavy"));
-        }
-        if (filteredSides.length === 0) filteredSides = availableSidesBySeason;
-
-        let availableSides = filteredSides.filter(side => !recentSideDishes.includes(side.name));
-        if (availableSides.length === 0) availableSides = filteredSides; 
-
-        const selected = getRandomItem(availableSides);
-        recentSideDishes.push(selected.name);
-        if (recentSideDishes.length > 15) recentSideDishes.shift(); 
-
-        return selected;
-    }
-
-    // --- 限界突破モードの制御 ---
-    const LIMIT_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3日間
-    window.checkLimitBreak = function() {
-        const checkbox = document.getElementById('limitBreak');
-        const msg = document.getElementById('limitMessage');
-        const lastLimitTime = parseInt(localStorage.getItem('lastLimitBreakTime') || '0');
-        const now = Date.now();
-
-        if (checkbox.checked) {
-            if (now - lastLimitTime < LIMIT_COOLDOWN_MS) {
-                // クールダウン中
-                const nextDate = new Date(lastLimitTime + LIMIT_COOLDOWN_MS);
-                alert(`まだエネルギーがチャージされていません！\n次回解放は ${nextDate.getMonth()+1}月${nextDate.getDate()}日 ${nextDate.getHours()}時 以降です。`);
-                checkbox.checked = false;
-                msg.textContent = "";
-            } else {
-                msg.textContent = "🔥 リミッター解除！健康も余り物も無視して暴走します。";
+        const allSideDishes = [];
+        rawSideData.trim().split('\n').forEach(line => {
+            const match = line.match(/^([^,]+),([^,]+),(\[.*?\]),(\[.*?\])$/);
+            if (match) {
+                allSideDishes.push({
+                    category: match[1],
+                    name: match[2],
+                    tags: JSON.parse(match[3]),
+                    ingredients: JSON.parse(match[4])
+                });
             }
-        } else {
-            msg.textContent = "";
+        });
+        // ----------------------------------------------------
+
+        function getRandomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
         }
-    };
 
-    const limitOutOutEat = [
-        "近所の家系ラーメン（ライス付き）", "牛丼チェーン店で特盛・卵付き", "マクドナルド（バーガー＋ポテト＋ナゲット）", 
-        "近所の焼肉チェーンで食べ放題", "ファミレスでジャンボハンバーグ", "宅配ピザ（Lサイズ）", "ケンタッキーフライドチキン（セット）"
-    ];
+        function getRecipeLink(dishName) {
+            const cleanName = dishName.replace(/（.*?）/g, '').trim();
+            return `https://cookpad.com/search/${encodeURIComponent(cleanName)}`;
+        }
 
-    window.generateMenu = function() {
-        const skipBreakfast = document.getElementById('skipBreakfast').checked;
-        const leftoversInput = document.getElementById('leftovers').value;
-        const isLimitBreak = document.getElementById('limitBreak').checked;
-        const resultArea = document.getElementById('resultArea');
-        const menuOutput = document.getElementById('menuOutput');
+        let recentSideDishes = [];
+        function getBalancedSideDish(mainDish) {
+            const availableSidesBySeason = allSideDishes.filter(side => side.category === "通年" || side.category === currentSeasonJp);
+            let filteredSides = availableSidesBySeason;
 
-        resultArea.classList.remove('show');
+            if (mainDish.category === "meat" || mainDish.nutrition === "high" || mainDish.category === "carb") {
+                filteredSides = availableSidesBySeason.filter(side => side.tags.includes("refreshing") || side.tags.includes("veg") || side.tags.includes("low_cal") || side.tags.includes("soup"));
+            } else {
+                filteredSides = availableSidesBySeason.filter(side => !side.tags.includes("heavy"));
+            }
+            if (filteredSides.length === 0) filteredSides = availableSidesBySeason;
 
-        setTimeout(() => {
-            // ==========================================
-            // 🔥 限界突破モード (チートデイ) の処理
-            // ==========================================
-            if (isLimitBreak) {
-                // 実行日時を記録してクールダウン開始
-                localStorage.setItem('lastLimitBreakTime', Date.now().toString());
-                document.getElementById('limitBreak').checked = false; 
-                document.getElementById('limitMessage').textContent = "";
+            let availableSides = filteredSides.filter(side => !recentSideDishes.includes(side.name));
+            if (availableSides.length === 0) availableSides = filteredSides;
 
-                // 外食か、自炊の悪魔コンボかランダム決定
-                const isEatOut = Math.random() < 0.5;
+            const selected = getRandomItem(availableSides);
+            recentSideDishes.push(selected.name);
+            if (recentSideDishes.length > 15) recentSideDishes.shift();
 
-                if (isEatOut) {
-                    const eatOutMenu = getRandomItem(limitOutOutEat);
-                    menuOutput.innerHTML = `
+            return selected;
+        }
+
+        // --- 限界突破モードの制御 ---
+        const LIMIT_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3日間
+        window.checkLimitBreak = function () {
+            const checkbox = document.getElementById('limitBreak');
+            const msg = document.getElementById('limitMessage');
+            const lastLimitTime = parseInt(localStorage.getItem('lastLimitBreakTime') || '0');
+            const now = Date.now();
+
+            if (checkbox.checked) {
+                if (now - lastLimitTime < LIMIT_COOLDOWN_MS) {
+                    // クールダウン中
+                    const nextDate = new Date(lastLimitTime + LIMIT_COOLDOWN_MS);
+                    alert(`まだエネルギーがチャージされていません！\n次回解放は ${nextDate.getMonth() + 1}月${nextDate.getDate()}日 ${nextDate.getHours()}時 以降です。`);
+                    checkbox.checked = false;
+                    msg.textContent = "";
+                } else {
+                    msg.textContent = "🔥 リミッター解除！健康も余り物も無視して暴走します。";
+                }
+            } else {
+                msg.textContent = "";
+            }
+        };
+
+        const limitOutOutEat = [
+            "近所の家系ラーメン（ライス付き）", "牛丼チェーン店で特盛・卵付き", "マクドナルド（バーガー＋ポテト＋ナゲット）",
+            "近所の焼肉チェーンで食べ放題", "ファミレスでジャンボハンバーグ", "宅配ピザ（Lサイズ）", "ケンタッキーフライドチキン（セット）"
+        ];
+
+        window.generateMenu = function () {
+            const skipBreakfast = document.getElementById('skipBreakfast').checked;
+            const leftoversInput = document.getElementById('leftovers').value;
+            const isLimitBreak = document.getElementById('limitBreak').checked;
+            const resultArea = document.getElementById('resultArea');
+            const menuOutput = document.getElementById('menuOutput');
+
+            resultArea.classList.remove('show');
+
+            setTimeout(() => {
+                // ==========================================
+                // 🔥 限界突破モード (チートデイ) の処理
+                // ==========================================
+                if (isLimitBreak) {
+                    // 実行日時を記録してクールダウン開始
+                    localStorage.setItem('lastLimitBreakTime', Date.now().toString());
+                    document.getElementById('limitBreak').checked = false;
+                    document.getElementById('limitMessage').textContent = "";
+
+                    // 外食か、自炊の悪魔コンボかランダム決定
+                    const isEatOut = Math.random() < 0.5;
+
+                    if (isEatOut) {
+                        const eatOutMenu = getRandomItem(limitOutOutEat);
+                        menuOutput.innerHTML = `
                         <div class="dish-type" style="color:#d32f2f;">🔥限界突破 (外食)</div>
                         <div class="dish-name" style="font-size: 1.6rem;">${eatOutMenu}</div>
                         <div class="advice" style="color:#333;">今日は料理なんて休んで、好きなものを腹一杯食べましょう！</div>
                     `;
-                } else {
-                    // 自炊コンボ: high（重い）主菜から強制的に2つ選ぶ
-                    const highMains = allMainDishes.filter(d => d.nutrition === 'high');
-                    const combo1 = getRandomItem(highMains);
-                    const combo2 = getRandomItem(highMains.filter(d => d.name !== combo1.name));
-                    
-                    const rawIngredients = [...combo1.ingredients, ...combo2.ingredients];
-                    const uniqueIngredients = [...new Set(rawIngredients)];
-                    const shoppingListHtml = uniqueIngredients.map(ing => `<li>${ing}</li>`).join('');
+                    } else {
+                        // 自炊コンボ: high（重い）主菜から強制的に2つ選ぶ
+                        const highMains = allMainDishes.filter(d => d.nutrition === 'high');
+                        const combo1 = getRandomItem(highMains);
+                        const combo2 = getRandomItem(highMains.filter(d => d.name !== combo1.name));
 
-                    menuOutput.innerHTML = `
+                        const rawIngredients = [...combo1.ingredients, ...combo2.ingredients];
+                        const uniqueIngredients = [...new Set(rawIngredients)];
+                        const shoppingListHtml = uniqueIngredients.map(ing => `<li>${ing}</li>`).join('');
+
+                        menuOutput.innerHTML = `
                         <div class="dish-type" style="color:#d32f2f;">🔥限界突破 (自炊悪魔コンボ)</div>
                         <div class="dish-name" style="font-size: 1.6rem;">${combo1.name} <br> × <br> ${combo2.name}</div>
                         <a href="${getRecipeLink(combo1.name)}" target="_blank" class="recipe-link">レシピ1 🔍</a>
@@ -372,73 +372,73 @@
                             <ul>${shoppingListHtml}<li>(基本調味料)</li></ul>
                         </div>
                     `;
+                    }
+                    resultArea.classList.add('show');
+                    return; // 限界突破時はここで終了（以下は実行されない）
                 }
-                resultArea.classList.add('show');
-                return; // 限界突破時はここで終了（以下は実行されない）
-            }
 
-            // ==========================================
-            // 🌿 通常モード (健康的・余り物処理) の処理
-            // ==========================================
-            let availableMains = allMainDishes.filter(dish => dish.season === "通年" || dish.season === currentSeasonJp);
+                // ==========================================
+                // 🌿 通常モード (健康的・余り物処理) の処理
+                // ==========================================
+                let availableMains = allMainDishes.filter(dish => dish.season === "通年" || dish.season === currentSeasonJp);
 
-            // 【追加】胃の負担軽減機能：前日が heavy(high) なら、今日は high を除外する
-            const lastMainNutrition = localStorage.getItem('lastDinnerNutrition');
-            if (lastMainNutrition === 'high') {
-                const healthyMains = availableMains.filter(dish => dish.nutrition !== 'high');
-                // もし候補が消えなければ適用
-                if (healthyMains.length > 0) availableMains = healthyMains;
-            }
-
-            // 前日のメニュー名被りを除外
-            const lastMainName = localStorage.getItem('lastDinnerMain');
-            if (lastMainName) {
-                availableMains = availableMains.filter(dish => dish.name !== lastMainName);
-            }
-
-            // 余り物フィルター
-            if (leftoversInput.trim() !== "") {
-                const keywords = leftoversInput.replace(/　/g, " ").split(/[,\s]+/).filter(k => k);
-                const normalizedKeywords = keywords.map(kw => kw.replace(/肉$/, ""));
-
-                const filteredMains = availableMains.filter(dish => {
-                    const searchTarget = dish.name + " " + dish.ingredients.join(" ");
-                    return normalizedKeywords.some(kw => searchTarget.includes(kw));
-                });
-                
-                if (filteredMains.length > 0) {
-                    availableMains = filteredMains;
-                } else {
-                    alert(`「${leftoversInput}」を含む条件に合うメニューが見つかりませんでした。空欄にして再度お試しください。`);
-                    return; 
+                // 【追加】胃の負担軽減機能：前日が heavy(high) なら、今日は high を除外する
+                const lastMainNutrition = localStorage.getItem('lastDinnerNutrition');
+                if (lastMainNutrition === 'high') {
+                    const healthyMains = availableMains.filter(dish => dish.nutrition !== 'high');
+                    // もし候補が消えなければ適用
+                    if (healthyMains.length > 0) availableMains = healthyMains;
                 }
-            }
 
-            let selectedMain = getRandomItem(availableMains);
+                // 前日のメニュー名被りを除外
+                const lastMainName = localStorage.getItem('lastDinnerMain');
+                if (lastMainName) {
+                    availableMains = availableMains.filter(dish => dish.name !== lastMainName);
+                }
 
-            // 朝食抜き時のエネルギー補填（前日重いものを避けた上での調整）
-            if (skipBreakfast && selectedMain.nutrition === "low") {
-                const highEnergyMains = availableMains.filter(dish => dish.nutrition === "normal" || dish.nutrition === "high");
-                if (highEnergyMains.length > 0) selectedMain = getRandomItem(highEnergyMains);
-            }
+                // 余り物フィルター
+                if (leftoversInput.trim() !== "") {
+                    const keywords = leftoversInput.replace(/　/g, " ").split(/[,\s]+/).filter(k => k);
+                    const normalizedKeywords = keywords.map(kw => kw.replace(/肉$/, ""));
 
-            // 履歴の保存
-            localStorage.setItem('lastDinnerMain', selectedMain.name);
-            localStorage.setItem('lastDinnerNutrition', selectedMain.nutrition); // カロリー属性も保存
+                    const filteredMains = availableMains.filter(dish => {
+                        const searchTarget = dish.name + " " + dish.ingredients.join(" ");
+                        return normalizedKeywords.some(kw => searchTarget.includes(kw));
+                    });
 
-            const selectedSide = getBalancedSideDish(selectedMain);
+                    if (filteredMains.length > 0) {
+                        availableMains = filteredMains;
+                    } else {
+                        alert(`「${leftoversInput}」を含む条件に合うメニューが見つかりませんでした。空欄にして再度お試しください。`);
+                        return;
+                    }
+                }
 
-            const rawIngredients = [...selectedMain.ingredients, ...selectedSide.ingredients];
-            const uniqueIngredients = [...new Set(rawIngredients)];
-            const shoppingListHtml = uniqueIngredients.map(ing => `<li>${ing}</li>`).join('');
+                let selectedMain = getRandomItem(availableMains);
 
-            let adviceHtml = skipBreakfast ? `<div class="advice">💡 朝食を抜いた分、しっかりエネルギーを補給できる組み合わせにしました！</div>` : "";
-            // 胃を休める通知
-            if (lastMainNutrition === 'high' && selectedMain.nutrition !== 'high') {
-                adviceHtml += `<div class="advice" style="color:#2e7d32;">🌿 昨日は重めの料理だったので、今日は胃に優しいメニューに調整しました。</div>`;
-            }
+                // 朝食抜き時のエネルギー補填（前日重いものを避けた上での調整）
+                if (skipBreakfast && selectedMain.nutrition === "low") {
+                    const highEnergyMains = availableMains.filter(dish => dish.nutrition === "normal" || dish.nutrition === "high");
+                    if (highEnergyMains.length > 0) selectedMain = getRandomItem(highEnergyMains);
+                }
 
-            menuOutput.innerHTML = `
+                // 履歴の保存
+                localStorage.setItem('lastDinnerMain', selectedMain.name);
+                localStorage.setItem('lastDinnerNutrition', selectedMain.nutrition); // カロリー属性も保存
+
+                const selectedSide = getBalancedSideDish(selectedMain);
+
+                const rawIngredients = [...selectedMain.ingredients, ...selectedSide.ingredients];
+                const uniqueIngredients = [...new Set(rawIngredients)];
+                const shoppingListHtml = uniqueIngredients.map(ing => `<li>${ing}</li>`).join('');
+
+                let adviceHtml = skipBreakfast ? `<div class="advice">💡 朝食を抜いた分、しっかりエネルギーを補給できる組み合わせにしました！</div>` : "";
+                // 胃を休める通知
+                if (lastMainNutrition === 'high' && selectedMain.nutrition !== 'high') {
+                    adviceHtml += `<div class="advice" style="color:#2e7d32;">🌿 昨日は重めの料理だったので、今日は胃に優しいメニューに調整しました。</div>`;
+                }
+
+                menuOutput.innerHTML = `
                 <div class="dish-type">主菜</div>
                 <div class="dish-name">${selectedMain.name}</div>
                 <a href="${getRecipeLink(selectedMain.name)}" target="_blank" class="recipe-link">レシピを検索 🔍</a>
@@ -458,9 +458,9 @@
                 </div>
             `;
 
-            resultArea.classList.add('show');
-        }, 300);
-    };
+                resultArea.classList.add('show');
+            }, 300);
+        };
 
-})(); 
+    })(); 
 </script>
