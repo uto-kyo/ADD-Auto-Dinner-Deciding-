@@ -45,6 +45,14 @@
         background-color: #E09612;
     }
 
+    .btn-tool.danger {
+        background-color: #E74C3C;
+    }
+
+    .btn-tool.danger:hover {
+        background-color: #C0392B;
+    }
+
     /* 時間割表のスタイル */
     .timetable-grid {
         display: grid;
@@ -102,7 +110,6 @@
     .subject-badge.required {
         background-color: #E74C3C;
         color: white;
-        /* 必修は赤系 */
     }
 
     .subject-badge.candidate {
@@ -144,7 +151,7 @@
         font-size: 0.9rem;
         margin-bottom: 8px;
         border-bottom: 1px solid #f5f5f5;
-        padding-bottom: 4px;
+        padding-bottom: 8px;
     }
 
     .cat-name {
@@ -180,7 +187,7 @@
         padding: 20px;
         border-radius: 12px;
         width: 90%;
-        max-width: 500px;
+        max-width: 550px;
         max-height: 90vh;
         overflow-y: auto;
         box-sizing: border-box;
@@ -211,6 +218,26 @@
         border-radius: 4px;
         box-sizing: border-box;
     }
+
+    .status-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 5px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .cap-info {
+        font-size: 0.95rem;
+        font-weight: bold;
+        background: #eef2f5;
+        padding: 6px 12px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 </style>
 
 <div class="timetable-wrapper">
@@ -218,15 +245,25 @@
 
     <div class="top-controls">
         <button class="btn-tool" onclick="openModal('addSubjectModal')">＋ 履修候補を追加</button>
+        <button class="btn-tool danger" onclick="openManageSubjectsModal()">🗑️ 科目の管理・削除</button>
         <button class="btn-tool secondary" onclick="openModal('statusModal')">⚙️ 現在の単位状況・要件設定</button>
     </div>
 
-    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-        <h3 style="margin:0;">時間割シミューレーター</h3>
-        <select id="termSelector" onchange="render()" style="padding:5px; border-radius:4px;">
-            <option value="前期">前期 (1Q/2Q含む)</option>
-            <option value="後期">後期 (3Q/4Q含む)</option>
-        </select>
+    <div class="status-bar">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <h3 style="margin:0;">時間割シミュレーター</h3>
+            <select id="termSelector" onchange="render()" style="padding:5px; border-radius:4px;">
+                <option value="前期">前期 (1Q/2Q含む)</option>
+                <option value="後期">後期 (3Q/4Q含む)</option>
+            </select>
+        </div>
+        <div class="cap-info">
+            <span>今年度登録: <span id="currentRegCredits" style="color:#E74C3C;">0</span> / <span
+                    id="capLimitDisp">50</span> 単位</span>
+            <label style="font-size:0.8rem; cursor:pointer; margin:0; display:flex; align-items:center; gap:3px;">
+                <input type="checkbox" id="capRelax" onchange="render()"> CAP緩和(60単位)
+            </label>
+        </div>
     </div>
 
     <div class="timetable-grid" id="ttGrid">
@@ -252,13 +289,12 @@
             <select id="gradeSelect" onchange="render()">
                 <option value="1">1年 (目標: 卒研着手)</option>
                 <option value="2">2年 (目標: 卒研着手)</option>
-                <option value="3" selected>3年 (目標: 卒業)</option>
+                <option value="3" selected>3年 (目標: 卒研着手)</option>
                 <option value="4">4年 (目標: 卒業)</option>
             </select>
         </div>
         <p style="font-size:0.8rem; color:#666;">※子区分の要件を満たした上で余った単位は、自動で親区分(《合計》)の計算に充当されます。</p>
-        <div id="categoryInputs">
-        </div>
+        <div id="categoryInputs"></div>
         <div style="display:flex; gap:10px; margin-top:20px;">
             <button class="btn-tool" onclick="saveStatus(); closeModal('statusModal')">保存して反映</button>
             <button class="btn-tool" style="background:#999;" onclick="closeModal('statusModal')">キャンセル</button>
@@ -293,8 +329,18 @@
                 </select>
             </div>
             <div class="form-group" style="flex:1;">
-                <label>時限</label>
-                <select id="subPeriod">
+                <label>開始時限</label>
+                <select id="subPeriodStart">
+                    <option value="1">1限</option>
+                    <option value="2">2限</option>
+                    <option value="3">3限</option>
+                    <option value="4">4限</option>
+                    <option value="5">5限</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label>終了時限</label>
+                <select id="subPeriodEnd">
                     <option value="1">1限</option>
                     <option value="2">2限</option>
                     <option value="3">3限</option>
@@ -305,8 +351,7 @@
         </div>
         <div class="form-group">
             <label>履修区分</label>
-            <select id="subCategory">
-            </select>
+            <select id="subCategory"></select>
         </div>
         <div class="form-group" style="display:flex; gap:10px; align-items:center;">
             <input type="checkbox" id="subIsReq"><label style="margin:0; color:#E74C3C;">必修 (自動的に時間割に固定されます)</label>
@@ -318,11 +363,21 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="manageSubjectsModal">
+    <div class="modal-content">
+        <h2>登録科目の管理・削除</h2>
+        <div id="manageList"
+            style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 6px;">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn-tool danger" onclick="clearAllSubjects()">全件削除 (リセット)</button>
+            <button class="btn-tool" style="background:#999;" onclick="closeModal('manageSubjectsModal')">閉じる</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // 即時関数でカプセル化（SPAの変数衝突防止）
     (function () {
-        // --- データ定義 (階層構造) ---
-        // parent が null でないものは、親区分の合計計算に合算される
         let categories = [
             { id: 'all', name: '《総合計》', parent: null, current: 0, reqRes: 100, reqGrad: 124, depth: 0 },
             { id: 'com', name: '全学共通《合計》', parent: 'all', current: 0, reqRes: 20, reqGrad: 24, depth: 1 },
@@ -337,17 +392,17 @@
             { id: 'pro_a_sel', name: '課程専門 選択', parent: 'pro_adv', current: 0, reqRes: 4, reqGrad: 10, depth: 3 }
         ];
 
+        // periods配列に変更 (連続コマ対応)
         let subjects = [
-            // サンプルデータ
-            { id: 1, name: '力学', credits: 2, term: '前期', day: 1, period: 2, catId: 'pro_b_req', isReq: true, isFixed: true },
-            { id: 2, name: '物理学', credits: 2, term: '前期', day: 1, period: 2, catId: 'pro_b_sel', isReq: false, isFixed: false },
-            { id: 3, name: '英語リーディング', credits: 2, term: '前期', day: 2, period: 1, catId: 'com_eng', isReq: true, isFixed: true },
-            { id: 4, name: '統計力学', credits: 2, term: '後期', day: 3, period: 3, catId: 'pro_a_sel', isReq: false, isFixed: false }
+            { id: 1, name: '力学', credits: 2, term: '前期', day: 1, periods: [2], catId: 'pro_b_req', isReq: true, isFixed: true },
+            { id: 2, name: '物理学', credits: 2, term: '前期', day: 1, periods: [2], catId: 'pro_b_sel', isReq: false, isFixed: false },
+            { id: 3, name: '英語リーディング', credits: 2, term: '前期', day: 2, periods: [1], catId: 'com_eng', isReq: true, isFixed: true },
+            // 連続コマのサンプル
+            { id: 4, name: 'プログラミング演習', credits: 2, term: '後期', day: 3, periods: [3, 4], catId: 'pro_a_sel', isReq: false, isFixed: false }
         ];
 
         const days = ['月', '火', '水', '木', '金'];
 
-        // グローバルに関数を公開
         window.openModal = id => document.getElementById(id).style.display = 'flex';
         window.closeModal = id => document.getElementById(id).style.display = 'none';
 
@@ -359,16 +414,13 @@
                 : '<option value="前期">前期</option><option value="後期">後期</option>';
         }
 
-        // 初期化
         function init() {
-            // カテゴリのセレクトボックス生成
             const catSel = document.getElementById('subCategory');
             categories.forEach(c => {
                 const prefix = '　'.repeat(c.depth);
                 catSel.innerHTML += `<option value="${c.id}">${prefix}${c.name}</option>`;
             });
 
-            // 状況入力テーブルの生成
             const catInputs = document.getElementById('categoryInputs');
             let html = '<table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">';
             html += '<tr style="border-bottom:1px solid #ccc;"><th>区分名</th><th>取得済</th><th>要件(卒研)</th><th>要件(卒業)</th></tr>';
@@ -400,18 +452,26 @@
 
         window.addSubject = function () {
             const name = document.getElementById('subName').value;
+            const pStart = parseInt(document.getElementById('subPeriodStart').value);
+            const pEnd = parseInt(document.getElementById('subPeriodEnd').value);
+
             if (!name) return alert("科目名を入力してください");
+            if (pEnd < pStart) return alert("終了時限は開始時限以降を選択してください");
+
+            // 連続コマの配列を生成 [1, 2] など
+            let pArray = [];
+            for (let i = pStart; i <= pEnd; i++) pArray.push(i);
 
             subjects.push({
                 id: Date.now(),
                 name: name,
                 credits: parseInt(document.getElementById('subCredits').value),
-                term: document.getElementById('subTerm').value,
+                term: document.getElementById('subTerm').value.includes('前期') ? '前期' : '後期',
                 day: parseInt(document.getElementById('subDay').value),
-                period: parseInt(document.getElementById('subPeriod').value),
+                periods: pArray,
                 catId: document.getElementById('subCategory').value,
                 isReq: document.getElementById('subIsReq').checked,
-                isFixed: document.getElementById('subIsReq').checked // 必修なら自動で固定
+                isFixed: document.getElementById('subIsReq').checked
             });
 
             document.getElementById('subName').value = "";
@@ -421,18 +481,61 @@
 
         window.toggleSubject = function (id) {
             const sub = subjects.find(s => s.id === id);
-            if (sub && !sub.isReq) { // 必修は解除不可
+            if (sub && !sub.isReq) {
                 sub.isFixed = !sub.isFixed;
                 window.render();
             }
         }
 
-        // 階層を考慮した単位計算
+        // --- 科目管理・削除機能 ---
+        window.openManageSubjectsModal = function () {
+            const list = document.getElementById('manageList');
+            let html = '';
+            if (subjects.length === 0) {
+                html = '<p style="color:#888; text-align:center;">登録されている科目はありません。</p>';
+            } else {
+                subjects.forEach(s => {
+                    const catName = categories.find(c => c.id === s.catId)?.name || '不明';
+                    const pStr = s.periods.length > 1 ? `${Math.min(...s.periods)}-${Math.max(...s.periods)}限` : `${s.periods[0]}限`;
+                    html += `
+                <div class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>${s.name}</strong> (${s.credits}単) <br>
+                        <span style="font-size:0.8rem; color:#666;">
+                            🕒 ${s.term} ${days[s.day - 1]}曜 ${pStr} | 区分: ${catName} 
+                            ${s.isReq ? '<b style="color:#E74C3C;">(必修)</b>' : ''}
+                        </span>
+                    </div>
+                    <button style="background:#E74C3C; color:white; border:none; border-radius:4px; padding:6px 12px; cursor:pointer; font-weight:bold;" 
+                            onclick="deleteSubject(${s.id})">削除</button>
+                </div>`;
+                });
+            }
+            list.innerHTML = html;
+            openModal('manageSubjectsModal');
+        }
+
+        window.deleteSubject = function (id) {
+            if (confirm('本当にこの科目を削除しますか？')) {
+                subjects = subjects.filter(s => s.id !== id);
+                openManageSubjectsModal();
+                window.render();
+            }
+        }
+
+        window.clearAllSubjects = function () {
+            if (confirm('⚠️ 登録されているすべての科目を削除しますか？\n（この操作は元に戻せません）')) {
+                subjects = [];
+                openManageSubjectsModal();
+                window.render();
+            }
+        }
+
+        // 単位計算
         function calculateCredits() {
             const grade = parseInt(document.getElementById('gradeSelect').value);
-            const isGrad = grade >= 3; // 3年以上なら卒業要件を見る
+            const isGrad = grade >= 4; // ★ 4年生のみ卒業目標、1〜3年は卒研着手
 
-            // 1. まず各区分の「現在値」＋「時間割で確定した値」を計算用オブジェクトにセット
             let calc = {};
             categories.forEach(c => {
                 calc[c.id] = {
@@ -443,27 +546,18 @@
                 };
             });
 
-            // 確定科目の加算
             subjects.forEach(s => {
                 if (s.isFixed && calc[s.catId]) {
                     calc[s.catId].earned += s.credits;
                 }
             });
 
-            // 2. ボトムアップで「親区分への繰り越し」を計算
-            // 深い階層から順に処理する
             const maxDepth = Math.max(...categories.map(c => c.depth));
             for (let d = maxDepth; d > 0; d--) {
                 categories.filter(c => c.depth === d).forEach(c => {
                     const node = calc[c.id];
                     const pNode = calc[c.parent];
-
-                    // 自身の目標を達成して余った分を親に合算（※親自体の直接取得分＋子の余り）
-                    if (pNode) {
-                        // 親が要求する単位の足しに、子の「獲得総数」または「要件上限」を足すか？
-                        // 一般的な大学：小区分をいくら取っても、親の要求を満たすための合算に組み込まれる。
-                        pNode.earned += node.earned;
-                    }
+                    if (pNode) pNode.earned += node.earned;
                 });
             }
             return calc;
@@ -473,7 +567,16 @@
             const term = document.getElementById('termSelector').value;
             const calcData = calculateCredits();
 
-            // 1. 時間割の描画
+            // CAP（年間履修上限）の計算
+            const capLimit = document.getElementById('capRelax').checked ? 60 : 50;
+            const currentFixedCredits = subjects.filter(s => s.isFixed).reduce((acc, s) => acc + s.credits, 0);
+
+            document.getElementById('capLimitDisp').innerText = capLimit;
+            const regEl = document.getElementById('currentRegCredits');
+            regEl.innerText = currentFixedCredits;
+            regEl.style.color = currentFixedCredits > capLimit ? "#E74C3C" : (currentFixedCredits === capLimit ? "#F5A623" : "#333");
+
+            // 時間割の描画
             const ttGrid = document.getElementById('ttGrid');
             let ttHtml = '<div class="tt-time"></div>';
             days.forEach(d => ttHtml += `<div class="tt-header">${d}</div>`);
@@ -481,20 +584,22 @@
             for (let p = 1; p <= 5; p++) {
                 ttHtml += `<div class="tt-time">${p}限</div>`;
                 for (let d = 1; d <= 5; d++) {
-                    // 該当学期、曜日、時限の科目を抽出
-                    const cellSubs = subjects.filter(s => s.term === term && s.day === d && s.period === p);
-
+                    // 該当学期、曜日で、periods配列の中に現在の時限pが含まれるものを抽出
+                    const cellSubs = subjects.filter(s => s.term === term && s.day === d && s.periods.includes(p));
                     let cellHtml = `<div class="tt-cell">`;
                     const fixedSub = cellSubs.find(s => s.isFixed);
 
                     cellSubs.forEach(s => {
                         let btnClass = "subject-badge candidate";
                         if (s.isFixed) btnClass = s.isReq ? "subject-badge required" : "subject-badge fixed";
-                        // 他の科目が固定されている場合は非表示か薄くする
+
                         if (fixedSub && !s.isFixed) {
                             cellHtml += `<div class="subject-badge" style="background:#eee; color:#aaa; text-decoration:line-through;">${s.name}</div>`;
                         } else {
-                            cellHtml += `<div class="${btnClass}" onclick="toggleSubject(${s.id})">${s.name}<br>(${s.credits}単)</div>`;
+                            // 連続コマの場合、表示に幅を持たせる工夫など
+                            const isStart = s.periods[0] === p;
+                            const label = isStart ? `${s.name}<br>(${s.credits}単)` : `(${s.name} 続き)`;
+                            cellHtml += `<div class="${btnClass}" onclick="toggleSubject(${s.id})">${label}</div>`;
                         }
                     });
                     cellHtml += `</div>`;
@@ -503,17 +608,15 @@
             }
             ttGrid.innerHTML = ttHtml;
 
-            // 2. 下部リストの描画
+            // 下部リストの描画
             const availList = document.getElementById('availableList');
             const unavailList = document.getElementById('unavailableList');
 
             let availHtml = "";
             let unavailHtml = "";
 
-            // 確定していない科目を評価
             const candidates = subjects.filter(s => !s.isFixed);
 
-            // 区分ごとにグループ化して表示
             categories.forEach(c => {
                 const catCands = candidates.filter(s => s.catId === c.id);
                 if (catCands.length === 0) return;
@@ -521,7 +624,6 @@
                 const cData = calcData[c.id];
                 const lack = cData.target - cData.earned;
 
-                // 親が不足しているかどうかもチェック
                 let isParentLack = false;
                 let curr = c;
                 while (curr.parent) {
@@ -530,22 +632,28 @@
                     curr = categories.find(cat => cat.id === curr.parent);
                 }
 
-                // 自身が不足している、または親が不足しているなら「選択可能」
                 if (lack > 0 || isParentLack) {
                     let text = `<div class="list-item"><span class="cat-name">【${c.name}】</span> 残り必要: <span style="color:#E74C3C; font-weight:bold;">${lack > 0 ? lack : '親区分補填'}</span> 単位<br>`;
                     catCands.forEach(s => {
-                        // 時間被りチェック
-                        const isConflict = subjects.some(fs => fs.isFixed && fs.term === s.term && fs.day === s.day && fs.period === s.period);
+                        const pStr = s.periods.length > 1 ? `${Math.min(...s.periods)}-${Math.max(...s.periods)}限` : `${s.periods[0]}限`;
+
+                        // 被り判定：自身が持っている時限のどれかが、確定科目の時限と被っているか
+                        const isConflict = subjects.some(fs => fs.isFixed && fs.term === s.term && fs.day === s.day && fs.periods.some(fp => s.periods.includes(fp)));
+                        // CAP上限判定
+                        const isCapOver = (currentFixedCredits + s.credits) > capLimit;
+
                         if (isConflict) {
-                            unavailHtml += `<div class="list-item"><span class="sub-name">${s.name} (${s.credits})</span> <span class="sub-reason">※時間割被り（${s.term} ${days[s.day - 1]}曜${s.period}限）</span></div>`;
+                            unavailHtml += `<div class="list-item"><span class="sub-name">${s.name} (${s.credits})</span> <span class="sub-reason">※時間割被り（${s.term} ${days[s.day - 1]}曜 ${pStr}）</span></div>`;
+                        } else if (isCapOver) {
+                            unavailHtml += `<div class="list-item"><span class="sub-name">${s.name} (${s.credits})</span> <span class="sub-reason">※単位上限(CAP)オーバー</span></div>`;
                         } else {
                             text += ` <span class="sub-name" style="cursor:pointer; text-decoration:underline;" onclick="document.getElementById('termSelector').value='${s.term}'; window.render();">・${s.name} (${s.credits}単)</span>`;
                         }
                     });
                     text += `</div>`;
-                    availHtml += text;
+                    // 中身の科目があるかチェック（すべてunavailに行った場合は空divになるため除外）
+                    if (text.includes('・')) availHtml += text;
                 } else {
-                    // 完全に要件を満たしている
                     catCands.forEach(s => {
                         unavailHtml += `<div class="list-item"><span class="sub-name">${s.name} (${s.credits})</span> <span class="sub-reason">※区分「${c.name}」および親区分の要件達成済み</span></div>`;
                     });
@@ -556,7 +664,6 @@
             unavailList.innerHTML = unavailHtml || '<p style="color:#888;">選択不可能な科目はありません。</p>';
         }
 
-        // 初回実行
         setTimeout(init, 100);
 
     })();
