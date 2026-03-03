@@ -252,7 +252,7 @@
     <div class="status-bar">
         <div style="display:flex; align-items:center; gap:15px;">
             <h3 style="margin:0;">時間割シミュレーター</h3>
-            <select id="termSelector" onchange="render()" style="padding:5px; border-radius:4px;">
+            <select id="termSelector" onchange="changeSetting()" style="padding:5px; border-radius:4px;">
                 <option value="前期">前期 (1Q/2Q含む)</option>
                 <option value="後期">後期 (3Q/4Q含む)</option>
             </select>
@@ -261,13 +261,12 @@
             <span>今年度登録: <span id="currentRegCredits" style="color:#E74C3C;">0</span> / <span
                     id="capLimitDisp">50</span> 単位</span>
             <label style="font-size:0.8rem; cursor:pointer; margin:0; display:flex; align-items:center; gap:3px;">
-                <input type="checkbox" id="capRelax" onchange="render()"> CAP緩和(60単位)
+                <input type="checkbox" id="capRelax" onchange="changeSetting()"> CAP緩和(60単位)
             </label>
         </div>
     </div>
 
-    <div class="timetable-grid" id="ttGrid">
-    </div>
+    <div class="timetable-grid" id="ttGrid"></div>
 
     <div class="lists-container">
         <div class="list-box">
@@ -286,7 +285,7 @@
         <h2>現在の単位状況・要件</h2>
         <div class="form-group">
             <label>現在の学年（目標自動判定）</label>
-            <select id="gradeSelect" onchange="render()">
+            <select id="gradeSelect" onchange="changeSetting()">
                 <option value="1">1年 (目標: 卒研着手)</option>
                 <option value="2">2年 (目標: 卒研着手)</option>
                 <option value="3" selected>3年 (目標: 卒研着手)</option>
@@ -378,15 +377,14 @@
 
 <script>
     (function () {
-        // 単位区分（追加要件をすべて網羅）
-        let categories = [
+        // --- 初期データ構造 ---
+        const defaultCategories = [
             { id: 'all', name: '《総合計》', parent: null, current: 0, reqRes: 100, reqGrad: 124, depth: 0 },
             { id: 'com', name: '全学共通《合計》', parent: 'all', current: 0, reqRes: 20, reqGrad: 24, depth: 1 },
             { id: 'com_eng', name: '全学共通 英語必修', parent: 'com', current: 0, reqRes: 4, reqGrad: 4, depth: 2 },
             { id: 'com_base', name: '全学共通 基盤教養', parent: 'com', current: 0, reqRes: 6, reqGrad: 8, depth: 2 },
             { id: 'com_prac', name: '全学共通 実践教養', parent: 'com', current: 0, reqRes: 2, reqGrad: 2, depth: 2 },
             { id: 'com_high', name: '全学共通 高年次', parent: 'com', current: 0, reqRes: 2, reqGrad: 2, depth: 2 },
-
             { id: 'pro', name: '専門教育《合計》', parent: 'all', current: 0, reqRes: 40, reqGrad: 60, depth: 1 },
             { id: 'pro_base', name: '専門基礎《合計》', parent: 'pro', current: 0, reqRes: 20, reqGrad: 24, depth: 2 },
             { id: 'pro_intro_req', name: '専門導入 必修', parent: 'pro_base', current: 0, reqRes: 4, reqGrad: 4, depth: 3 },
@@ -394,7 +392,6 @@
             { id: 'pro_b_req', name: '専門基礎 必修', parent: 'pro_base', current: 0, reqRes: 10, reqGrad: 10, depth: 3 },
             { id: 'pro_b_selreq', name: '専門基礎 選必', parent: 'pro_base', current: 0, reqRes: 2, reqGrad: 2, depth: 3 },
             { id: 'pro_b_sel', name: '専門基礎 選択', parent: 'pro_base', current: 0, reqRes: 2, reqGrad: 4, depth: 3 },
-
             { id: 'pro_adv', name: '課程専門《合計》', parent: 'pro', current: 0, reqRes: 20, reqGrad: 30, depth: 2 },
             { id: 'pro_a_req', name: '課程専門 必修', parent: 'pro_adv', current: 0, reqRes: 10, reqGrad: 12, depth: 3 },
             { id: 'pro_a_selreq', name: '課程専門 選必', parent: 'pro_adv', current: 0, reqRes: 4, reqGrad: 6, depth: 3 },
@@ -402,14 +399,64 @@
             { id: 'pro_a_grad', name: '卒業研究', parent: 'pro_adv', current: 0, reqRes: 0, reqGrad: 4, depth: 3 }
         ];
 
-        let subjects = [
+        const defaultSubjects = [
             { id: 1, name: '力学', credits: 2, term: '前期', day: 1, periods: [2], catId: 'pro_b_req', isReq: true, isFixed: true },
             { id: 2, name: '物理学', credits: 2, term: '前期', day: 1, periods: [2], catId: 'pro_b_sel', isReq: false, isFixed: false },
             { id: 3, name: '英語リーディング', credits: 2, term: '前期', day: 2, periods: [1], catId: 'com_eng', isReq: true, isFixed: true },
             { id: 4, name: 'プログラミング演習', credits: 2, term: '後期', day: 3, periods: [3, 4], catId: 'pro_a_sel', isReq: false, isFixed: false }
         ];
 
+        // --- 【追加】データのロード処理 ---
+        let categories = [];
+        const savedCats = localStorage.getItem('timetable_categories');
+        if (savedCats) {
+            try {
+                const parsed = JSON.parse(savedCats);
+                // デフォルトの構造をベースに、保存された数値をマージ（新区分が追加されても安全に読み込む）
+                categories = defaultCategories.map(def => {
+                    const found = parsed.find(p => p.id === def.id);
+                    if (found) return { ...def, current: found.current, reqRes: found.reqRes, reqGrad: found.reqGrad };
+                    return def;
+                });
+            } catch (e) { categories = [...defaultCategories]; }
+        } else {
+            categories = [...defaultCategories];
+        }
+
+        let subjects = [];
+        const savedSubs = localStorage.getItem('timetable_subjects');
+        if (savedSubs) {
+            try { subjects = JSON.parse(savedSubs); } catch (e) { subjects = [...defaultSubjects]; }
+        } else {
+            subjects = [...defaultSubjects];
+        }
+
+        let settings = { grade: 3, capRelax: false, term: '前期' };
+        const savedSets = localStorage.getItem('timetable_settings');
+        if (savedSets) {
+            try { settings = JSON.parse(savedSets); } catch (e) { }
+        }
+
         const days = ['月', '火', '水', '木', '金'];
+
+        // --- 【追加】データのセーブ処理 ---
+        function saveData() {
+            localStorage.setItem('timetable_categories', JSON.stringify(categories));
+            localStorage.setItem('timetable_subjects', JSON.stringify(subjects));
+
+            const settingsToSave = {
+                grade: document.getElementById('gradeSelect') ? document.getElementById('gradeSelect').value : 3,
+                capRelax: document.getElementById('capRelax') ? document.getElementById('capRelax').checked : false,
+                term: document.getElementById('termSelector') ? document.getElementById('termSelector').value : '前期'
+            };
+            localStorage.setItem('timetable_settings', JSON.stringify(settingsToSave));
+        }
+
+        // 各種設定の変更時にもセーブと再描画を行う
+        window.changeSetting = function () {
+            saveData();
+            window.render();
+        }
 
         window.openModal = id => document.getElementById(id).style.display = 'flex';
         window.closeModal = id => document.getElementById(id).style.display = 'none';
@@ -423,6 +470,11 @@
         }
 
         function init() {
+            // 設定の復元
+            if (document.getElementById('gradeSelect')) document.getElementById('gradeSelect').value = settings.grade;
+            if (document.getElementById('capRelax')) document.getElementById('capRelax').checked = settings.capRelax;
+            if (document.getElementById('termSelector')) document.getElementById('termSelector').value = settings.term;
+
             const catSel = document.getElementById('subCategory');
             categories.forEach(c => {
                 const prefix = '　'.repeat(c.depth);
@@ -455,6 +507,7 @@
                 c.reqRes = parseInt(document.getElementById(`res_${c.id}`).value) || 0;
                 c.reqGrad = parseInt(document.getElementById(`grd_${c.id}`).value) || 0;
             });
+            saveData(); // セーブ
             window.render();
         }
 
@@ -483,6 +536,7 @@
 
             document.getElementById('subName').value = "";
             closeModal('addSubjectModal');
+            saveData(); // セーブ
             window.render();
         }
 
@@ -490,11 +544,11 @@
             const sub = subjects.find(s => s.id === id);
             if (sub && !sub.isReq) {
                 sub.isFixed = !sub.isFixed;
+                saveData(); // セーブ
                 window.render();
             }
         }
 
-        // --- 科目管理・削除機能 ---
         window.openManageSubjectsModal = function () {
             const list = document.getElementById('manageList');
             let html = '';
@@ -525,6 +579,7 @@
         window.deleteSubject = function (id) {
             if (confirm('本当にこの科目を削除しますか？')) {
                 subjects = subjects.filter(s => s.id !== id);
+                saveData(); // セーブ
                 openManageSubjectsModal();
                 window.render();
             }
@@ -533,14 +588,14 @@
         window.clearAllSubjects = function () {
             if (confirm('⚠️ 登録されているすべての科目を削除しますか？\n（この操作は元に戻せません）')) {
                 subjects = [];
+                saveData(); // セーブ
                 openManageSubjectsModal();
                 window.render();
             }
         }
 
-        // 単位計算
         function calculateCredits() {
-            const grade = parseInt(document.getElementById('gradeSelect').value);
+            const grade = parseInt(document.getElementById('gradeSelect').value) || 3;
             const isGrad = grade >= 4;
 
             let calc = {};
@@ -574,16 +629,17 @@
             const term = document.getElementById('termSelector').value;
             const calcData = calculateCredits();
 
-            // CAP（年間履修上限）の計算
-            const capLimit = document.getElementById('capRelax').checked ? 60 : 50;
+            const capRelaxEl = document.getElementById('capRelax');
+            const capLimit = (capRelaxEl && capRelaxEl.checked) ? 60 : 50;
             const currentFixedCredits = subjects.filter(s => s.isFixed).reduce((acc, s) => acc + s.credits, 0);
 
             document.getElementById('capLimitDisp').innerText = capLimit;
             const regEl = document.getElementById('currentRegCredits');
-            regEl.innerText = currentFixedCredits;
-            regEl.style.color = currentFixedCredits > capLimit ? "#E74C3C" : (currentFixedCredits === capLimit ? "#F5A623" : "#333");
+            if (regEl) {
+                regEl.innerText = currentFixedCredits;
+                regEl.style.color = currentFixedCredits > capLimit ? "#E74C3C" : (currentFixedCredits === capLimit ? "#F5A623" : "#333");
+            }
 
-            // 時間割の描画
             const ttGrid = document.getElementById('ttGrid');
             let ttHtml = '<div class="tt-time"></div>';
             days.forEach(d => ttHtml += `<div class="tt-header">${d}</div>`);
@@ -613,7 +669,6 @@
             }
             ttGrid.innerHTML = ttHtml;
 
-            // 下部リストの描画
             const availList = document.getElementById('availableList');
             const unavailList = document.getElementById('unavailableList');
 
@@ -650,7 +705,8 @@
                         } else if (isCapOver) {
                             unavailHtml += `<div class="list-item"><span class="sub-name">${s.name} (${s.credits})</span> <span class="sub-reason">※単位上限(CAP)オーバー</span></div>`;
                         } else {
-                            text += ` <span class="sub-name" style="cursor:pointer; text-decoration:underline;" onclick="document.getElementById('termSelector').value='${s.term}'; window.render();">・${s.name} (${s.credits}単)</span>`;
+                            // ▼ クリック時の学期切り替えもセーブさせるために changeSetting() を併用
+                            text += ` <span class="sub-name" style="cursor:pointer; text-decoration:underline;" onclick="document.getElementById('termSelector').value='${s.term}'; window.changeSetting();">・${s.name} (${s.credits}単)</span>`;
                         }
                     });
                     text += `</div>`;
@@ -662,8 +718,8 @@
                 }
             });
 
-            availList.innerHTML = availHtml || '<p style="color:#888;">現在不足している要件に対する候補科目はありません。</p>';
-            unavailList.innerHTML = unavailHtml || '<p style="color:#888;">選択不可能な科目はありません。</p>';
+            if (availList) availList.innerHTML = availHtml || '<p style="color:#888;">現在不足している要件に対する候補科目はありません。</p>';
+            if (unavailList) unavailList.innerHTML = unavailHtml || '<p style="color:#888;">選択不可能な科目はありません。</p>';
         }
 
         setTimeout(init, 100);
